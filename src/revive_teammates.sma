@@ -11,6 +11,8 @@ public stock const PluginURL[]      = "https://github.com/ma4ts";
 
 #define AUTO_CREATE_CONFIG								// Auto create config file in `configs/plugins` folder
 
+new const DEATH_CLASSNAME[]			= "death__model";
+
 enum cvars_struct	{
 	Cvar__ReviveAccess,									// Access flag to revive teammate's (see amxconst.inc)
 	Cvar__ReviveTime,									// Revive time in seconds
@@ -23,10 +25,37 @@ enum cvars_struct	{
 	Cvar__MaxPlayerCanRevives,							// How many times per round can one player revive
 	Cvar__DeathModel[MAX_RESOURCE_PATH_LENGTH]			// Model
 };
+
+enum player_struct	{
+	Player__Revives,									// How many times per round can one player revive
+	Player__Revived										// How many times per round can one player be revived
+};
+
 new g_eCvars[cvars_struct];
+new g_iRevives[TeamName];								// How many times per round can one team revive
+
+new g_ePlayer[MAX_PLAYERS + 1][player_struct];
+
+//Resetting all counters
+public CSGameRules_RestartRound_Post()	{
+	for (new id = 1; id <= MaxClients; id++)	{
+		if (!is_user_connected(id))
+			continue;
+
+		g_ePlayer[id][Player__Revives] = 0;
+		g_ePlayer[id][Player__Revived] = 0;
+	}
+
+	g_iRevives[TEAM_CT] = 0;
+	g_iRevives[TEAM_TERRORIST] = 0;
+}
+public client_disconnected(id)	{
+	g_ePlayer[id][Player__Revives] = 0;
+	g_ePlayer[id][Player__Revived] = 0;
+}
 
 public plugin_init()	{
-	
+	RegisterHookChain(RG_CSGameRules_RestartRound, "CSGameRules_RestartRound_Post", 1);
 }
 
 //need cvars in precache for death model
@@ -133,5 +162,3 @@ public plugin_precache()	{
 			log_error(AMX_ERR_NATIVE, "Model '%s' is not exists", szTemp);
 	}
 }
-
-
