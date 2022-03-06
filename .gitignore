@@ -1,0 +1,11 @@
+#ignore compiled plugins
+plugins
+
+#ignore include files
+include
+
+#ignore compiler
+compiler
+
+#ignore VSC settings
+.vscode
