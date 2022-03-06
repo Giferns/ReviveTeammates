@@ -9,30 +9,30 @@ public stock const PluginVersion[]  = "0.0.1";
 public stock const PluginAuthor[]   = "m4ts";
 public stock const PluginURL[]      = "https://github.com/ma4ts";
 
-#define AUTO_CREATE_CONFIG								// Auto create config file in `configs/plugins` folder
+#define AUTO_CREATE_CONFIG // Auto create config file in `configs/plugins` folder
 
 new const DEATH_CLASSNAME[]			= "death__model";
 
 enum cvars_struct	{
-	Cvar__ReviveAccess,									// Access flag to revive teammate's (see amxconst.inc)
-	Cvar__ReviveTime,									// Revive time in seconds
-	Cvar__ReviveDistance,								// The distance to the dead teammate
-	Cvar__AccessTime,									// Access to the teammate's revival after the start of the round in seconds
-	Cvar__ReviveCost,									// How much does it cost to revive a teammate? (U can set 0 or blank)
-	Cvar__RevivedHealth,								// How much health to give to a reborn player
-	Cvar__MaxRoundRevives,								// How many times per round can one team revive
-	Cvar__MaxPlayerRevives,								// How many times per round can one player be revived
-	Cvar__MaxPlayerCanRevives,							// How many times per round can one player revive
-	Cvar__DeathModel[MAX_RESOURCE_PATH_LENGTH]			// Model
+	Cvar__ReviveAccess, // Access flag to revive teammate's (see amxconst.inc)
+	Cvar__ReviveTime, // Revive time in seconds
+	Cvar__ReviveDistance, // The distance to the dead teammate
+	Cvar__AccessTime, // Access to the teammate's revival after the start of the round in seconds
+	Cvar__ReviveCost, // How much does it cost to revive a teammate? (U can set 0 or blank)
+	Cvar__RevivedHealth, // How much health to give to a reborn player
+	Cvar__MaxRoundRevives, // How many times per round can one team revive
+	Cvar__MaxPlayerRevives,	// How many times per round can one player be revived
+	Cvar__MaxPlayerCanRevives, // How many times per round can one player revive
+	Cvar__DeathModel[MAX_RESOURCE_PATH_LENGTH] // Model
 };
 
 enum player_struct	{
-	Player__Revives,									// How many times per round can one player revive
-	Player__Revived										// How many times per round can one player be revived
+	Player__Revives, // How many times per round can one player revive
+	Player__Revived // How many times per round can one player be revived
 };
 
 new g_eCvars[cvars_struct];
-new g_iRevives[TeamName];								// How many times per round can one team revive
+new g_iRevives[TeamName]; // How many times per round can one team revive
 
 new g_ePlayer[MAX_PLAYERS + 1][player_struct];
 
