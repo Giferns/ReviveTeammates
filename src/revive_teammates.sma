@@ -16,36 +16,36 @@ public stock const PluginURL[]      = "https://github.com/ma4ts";
 new const DEATH_CLASSNAME[]			= "death__model";
 
 enum cvars_struct	{
-	Cvar__ReviveAccess, // Access flag to revive teammate's (see amxconst.inc)
 	Cvar__ReviveTime, // Revive time in seconds
-	Cvar__AccessTime, // Access to the teammate's revival after the start of the round in seconds
-	Cvar__ReviveCost, // How much does it cost to revive a teammate? (U can set 0 or blank)
-	Cvar__RevivedHealth, // How much health to give to a reborn player
-	Cvar__MaxRoundRevives, // How many times per round can one team revive
-	Cvar__MaxPlayerRevives,	// How many times per round can one player be revived
-	Cvar__MaxPlayerCanRevives, // How many times per round can one player revive
+	Cvar__RevivedHealth,
 	Cvar__DeathModel[MAX_RESOURCE_PATH_LENGTH] // Model
 };
 
+enum forwards_struct	{
+	Forward_ReviveStart,
+	Forward_ReviveLoop,
+	Forward_ReviveEnd
+};
+
 new g_eCvars[cvars_struct];
-new g_iRevives[TeamName]; // How many times per round can one team revive
+new g_eForwards[forwards_struct];
 
-new g_iPlayerRevives[MAX_PLAYERS + 1]; // How many times per round can one player revive
+new bool: g_bActivator[MAX_PLAYERS + 1];
 
-//Resetting all counters every round and when player has been disconnected
-public CSGameRules_RestartRound_Post()	{
+//clear entityes
+public CSGameRules_CleanUpMap_Post()	{
+	new ent = NULLENT;
+
+	while ((ent = rg_find_ent_by_class(ent, DEATH_CLASSNAME)))	{
+		engfunc(EngFunc_RemoveEntity, ent);
+	}
+
 	for (new id = 1; id <= MaxClients; id++)	{
 		if (!is_user_connected(id))
 			continue;
 
-		g_iPlayerRevives[id] = 0;
+		g_bActivator[id] = false;
 	}
-
-	g_iRevives[TEAM_CT] = 0;
-	g_iRevives[TEAM_TERRORIST] = 0;
-}
-public client_disconnected(id)	{
-	g_iPlayerRevives[id] = 0;
 }
 
 //Hook "+use" on entity
@@ -75,14 +75,16 @@ public MessageHook_ClCorpse()	{
 		arg_angle_x,
 		arg_angle_y,
 		arg_angle_z,
-/*
-		arg_delay,
+
+		arg_delay, //((pev->animtime - gpGlobals->time) * 100). Must : delay/100
 		arg_sequence,
 		arg_class_id,
 		arg_team_id,
-*/
+
 		arg_player_id = 12
 	};
+
+	#pragma unused arg_delay, arg_team_id
 
 	enum coords_struct	{
 		Float: coord_x,
@@ -98,9 +100,10 @@ public MessageHook_ClCorpse()	{
 	new entityData[entity_struct];
 
 	//get corpse coords
-	entityData[entity_coords][coord_x] = float(get_msg_arg_int(arg_coord_x));
-	entityData[entity_coords][coord_y] = float(get_msg_arg_int(arg_coord_y));
-	entityData[entity_coords][coord_z] = float(get_msg_arg_int(arg_coord_z));
+	//https://github.com/s1lentq/ReGameDLL_CS/blob/c002edd5b18a8408e299bc6cccfec2c7de56ba3d/regamedll/dlls/player.cpp#L8721 ma'faka
+	entityData[entity_coords][coord_x] = float(get_msg_arg_int(arg_coord_x) / 128);
+	entityData[entity_coords][coord_y] = float(get_msg_arg_int(arg_coord_y) / 128);
+	entityData[entity_coords][coord_z] = float(get_msg_arg_int(arg_coord_z) / 128);
 
 	//get corpse angles
 	entityData[entity_angles][coord_x] = float(get_msg_arg_int(arg_angle_x));
@@ -129,10 +132,10 @@ public MessageHook_ClCorpse()	{
 	set_entvar(entity, var_owner, player);
 
 	if (!bCustomModel)	{
-		set_entvar(entity, var_body, get_entvar(player, var_body));
-		set_entvar(entity, var_skin, get_entvar(player, var_skin));
-		set_entvar(entity, var_sequence, get_entvar(player, var_sequence));
-		set_entvar(entity, var_gaitsequence, get_entvar(player, var_gaitsequence));
+		set_entvar(entity, var_body, get_msg_arg_int(arg_class_id));
+		//set_entvar(entity, var_skin, get_entvar(player, var_skin));
+		set_entvar(entity, var_sequence, get_msg_arg_int(arg_sequence));
+		//set_entvar(entity, var_gaitsequence, get_entvar(player, var_gaitsequence));
 	}
 
 	SetUse(entity, "EntityHook_Use");
@@ -140,27 +143,32 @@ public MessageHook_ClCorpse()	{
 	return PLUGIN_HANDLED;
 }
 
-public EntityHook_Use(const ent, const activator, const caller, USE_TYPE: useType, Float: value)	{
+public EntityHook_Use(const ent, const activator, caller, USE_TYPE: useType, Float: value)	{
 	if (is_nullent(ent) || get_member_game(m_bRoundTerminating) || activator != caller || !IsPlayer(activator) \
 		|| get_member(activator, m_iTeam) != get_member(get_entvar(ent, var_owner), m_iTeam))
 		return;
 
-	if (g_eCvars[Cvar__ReviveAccess] != -1 && ~get_user_flags(activator) & g_eCvars[Cvar__ReviveAccess])
+	caller = get_entvar(ent, var_owner);
+
+	new retVal;
+	ExecuteForward(g_eForwards[Forward_ReviveStart], retVal, activator, caller);
+
+	if (retVal == PLUGIN_HANDLED)
 		return;
 
-	if (g_eCvars[Cvar__AccessTime] && (get_gametime() - get_member_game(m_fRoundStartTime) < g_eCvars[Cvar__AccessTime]))
-		return;
-
-
+	g_bActivator[activator] = true;
 }
 
 public plugin_init()	{
-	RegisterHookChain(RG_CSGameRules_RestartRound, "CSGameRules_RestartRound_Post", 1);
 	RegisterHookChain(RG_CSGameRules_CleanUpMap, "CSGameRules_CleanUpMap_Post", 1);
 
 	RegisterHam(Ham_ObjectCaps, "info_target", "HamHook_ObjectCaps_Pre", 0);
 
 	register_message(get_user_msgid("ClCorpse"), "MessageHook_ClCorpse");
+
+	g_eForwards[Forward_ReviveStart] = CreateMultiForward("rt_revive_start", ET_CONTINUE, FP_CELL, FP_CELL);
+	g_eForwards[Forward_ReviveLoop] = CreateMultiForward("rt_revive_loop", ET_CONTINUE, FP_CELL, FP_CELL, FP_CELL);
+	g_eForwards[Forward_ReviveEnd] = CreateMultiForward("rt_revive_end", ET_CONTINUE, FP_CELL, FP_CELL);
 }
 
 //need cvars in precache for death model
@@ -168,16 +176,6 @@ public plugin_precache()	{
 	register_plugin(PluginName, PluginVersion, PluginAuthor);
 
 	new szTemp[64], pCvar;
-
-	pCvar = create_cvar(
-		"rt_revive_access_flag",
-		"",
-		_, // FCVAR_NONE
-		"Access flag(s) to revive teammate's (see amxconst.inc)^n@note You can leave an empty value for all players"
-	);
-
-	bind_pcvar_string(pCvar, szTemp, charsmax(szTemp));
-	g_eCvars[Cvar__ReviveAccess] = (szTemp[0] || szTemp[0] != '0') ? read_flags(szTemp) : -1;
 
 	pCvar = create_cvar(
 		"rt_revive_time",
@@ -188,53 +186,12 @@ public plugin_precache()	{
 	bind_pcvar_num(pCvar, g_eCvars[Cvar__ReviveTime]);
 
 	pCvar = create_cvar(
-		"rt_access_time",
-		"15",
-		_, // FCVAR_NONE
-		"Access to the teammate's revival after the start of the round in seconds"
-	);
-	bind_pcvar_num(pCvar, g_eCvars[Cvar__AccessTime]);
-
-	pCvar = create_cvar(
-		"rt_revive_cost",
-		"0",
-		_, // FCVAR_NONE
-		"How much does it cost to revive a teammate? (U can set 0 or blank)",
-		true, 0.0,
-		true, get_cvar_float("mp_maxmoney")
-	);
-
-	pCvar = create_cvar(
 		"rt_revived_health",
 		"50",
 		_, // FCVAR_NONE
 		"How much health to give to a reborn player?"
 	);
 	bind_pcvar_num(pCvar, g_eCvars[Cvar__RevivedHealth]);
-
-	pCvar = create_cvar(
-		"rt_max_round_revives",
-		"5",
-		_, // FCVAR_NONE
-		"How many times per round can one team revive"
-	);
-	bind_pcvar_num(pCvar, g_eCvars[Cvar__MaxRoundRevives]);
-
-	pCvar = create_cvar(
-		"rt_max_player_revives",
-		"1",
-		_, // FCVAR_NONE
-		"How many times per round can one player be revived"
-	);
-	bind_pcvar_num(pCvar, g_eCvars[Cvar__MaxPlayerRevives]);
-
-	pCvar = create_cvar(
-		"rt_max_player_can_revive",
-		"3",
-		_, // FCVAR_NONE
-		"How many times per round can one player revive"
-	);
-	bind_pcvar_num(pCvar, g_eCvars[Cvar__MaxPlayerCanRevives]);
 
 	pCvar = create_cvar(
 		"rt_death_model",
