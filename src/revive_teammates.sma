@@ -23,39 +23,83 @@ enum cvars_struct	{
 
 enum forwards_struct	{
 	Forward_ReviveStart,
-	Forward_ReviveLoop,
+	Forward_ReviveLoop_Pre,
+	Forward_ReviveLoop_Post,
 	Forward_ReviveEnd
 };
 
 new g_eCvars[cvars_struct];
 new g_eForwards[forwards_struct];
 
-new bool: g_bActivator[MAX_PLAYERS + 1];
+new Array: g_aEntityData;
 
-//clear entityes
-public CSGameRules_CleanUpMap_Post()	{
-	new ent = NULLENT;
+public EntityHook_Use(const ent, const activator, caller, USE_TYPE: useType, Float: value)	{
+	if (is_nullent(ent) || get_member_game(m_bRoundTerminating) || activator != caller || !IsPlayer(activator) \
+		|| get_member(activator, m_iTeam) != get_member(get_entvar(ent, var_owner), m_iTeam))
+		return;
 
-	while ((ent = rg_find_ent_by_class(ent, DEATH_CLASSNAME)))	{
-		engfunc(EngFunc_RemoveEntity, ent);
+	if (!ArraySize(g_aEntityData))	{
+		set_entvar(ent, var_fuser1, g_eCvars[Cvar__ReviveTime]);
 	}
 
-	for (new id = 1; id <= MaxClients; id++)	{
-		if (!is_user_connected(id))
-			continue;
-
-		g_bActivator[id] = false;
-	}
+	set_entvar(ent, var_iuser1, ArrayPushCell(g_aEntityData, activator));
 }
 
-//Hook "+use" on entity
-public HamHook_ObjectCaps_Pre(const entity)	{
-	if (!FClassnameIs(entity, DEATH_CLASSNAME))
-		return HAM_IGNORED;
+public EntityHook_Think(const ent)	{
+	if (is_nullent(ent))
+		return;
 
-	SetHamReturnInteger(FCAP_ONOFF_USE);
+	new Float: flNextThink = 1.0;
+	new player = get_entvar(ent, var_owner);
 
-	return HAM_OVERRIDE; //	Still calls the target function, but returns whatever is set with SetHamReturn*()
+	new Float: flTimeUntilRespawn = get_entvar(ent, var_fuser1);
+
+	for (new i, activator; i < ArraySize(g_aEntityData); i++)	{
+		activator = ArrayGetCell(g_aEntityData, i);
+
+		if (is_user_alive(player) || get_member(player, m_iTeam) == TEAM_SPECTATOR)	{
+			engfunc(EngFunc_RemoveEntity, ent);
+			ExecuteForward(g_eForwards[Forward_ReviveEnd], _, player, activator, false /* success = false */);
+
+			return;
+		}
+
+		if (!(get_entvar(activator, var_button) & IN_USE))	{
+			ArrayDeleteItem(g_aEntityData, i);
+			ExecuteForward(g_eForwards[Forward_ReviveEnd], _, player, activator, false /* success = false */);
+
+			return;
+		}
+
+		new retVal;
+		ExecuteForward(g_eForwards[Forward_ReviveStart], retVal, activator, get_entvar(ent, var_owner));
+
+		if (retVal == PLUGIN_HANDLED)	{
+			ExecuteForward(g_eForwards[Forward_ReviveEnd], _, player, activator, false /* success = false */);
+
+			return;
+		}
+
+		ExecuteForward(g_eForwards[Forward_ReviveLoop_Pre], retVal, player, activator, flTimeUntilRespawn);
+
+		if (retVal == PLUGIN_HANDLED)	{
+			ExecuteForward(g_eForwards[Forward_ReviveEnd], _, player, activator, false /* success = false */);
+
+			return;
+		}
+
+		if (flTimeUntilRespawn <= 0.0)	{
+			rg_round_respawn(player);
+			rg_give_default_items(player);
+
+			ExecuteForward(g_eForwards[Forward_ReviveEnd], _, player, activator, true /* success = true */);
+		}
+
+		ExecuteForward(g_eForwards[Forward_ReviveLoop_Post], _, player, activator, flTimeUntilRespawn, flNextThink);
+	}
+
+	set_entvar(ent, var_fuser1, --flTimeUntilRespawn);
+	set_entvar(ent, var_nextthink, get_gametime() + flNextThink);
 }
 
 //https://wiki.alliedmods.net/Half-Life_1_Game_Events#ClCorpse
@@ -81,7 +125,7 @@ public MessageHook_ClCorpse()	{
 		arg_class_id,
 		arg_team_id,
 
-		arg_player_id = 12
+		arg_player_id
 	};
 
 	#pragma unused arg_delay, arg_team_id
@@ -106,9 +150,9 @@ public MessageHook_ClCorpse()	{
 	entityData[entity_coords][coord_z] = float(get_msg_arg_int(arg_coord_z) / 128);
 
 	//get corpse angles
-	entityData[entity_angles][coord_x] = float(get_msg_arg_int(arg_angle_x));
-	entityData[entity_angles][coord_y] = float(get_msg_arg_int(arg_angle_y));
-	entityData[entity_angles][coord_z] = float(get_msg_arg_int(arg_angle_z));
+	entityData[entity_angles][coord_x] = get_msg_arg_float(arg_angle_x);
+	entityData[entity_angles][coord_y] = get_msg_arg_float(arg_angle_y);
+	entityData[entity_angles][coord_z] = get_msg_arg_float(arg_angle_z);
 
 	new szTemp[MAX_RESOURCE_PATH_LENGTH], bool: bCustomModel;
 
@@ -138,26 +182,37 @@ public MessageHook_ClCorpse()	{
 		//set_entvar(entity, var_gaitsequence, get_entvar(player, var_gaitsequence));
 	}
 
+	if (!g_aEntityData)
+		g_aEntityData = ArrayCreate();
+
+	set_entvar(entity, var_nextthink, get_gametime() + 0.01);
+
 	SetUse(entity, "EntityHook_Use");
+	SetThink(entity, "EntityHook_Think");
 
 	return PLUGIN_HANDLED;
 }
 
-public EntityHook_Use(const ent, const activator, caller, USE_TYPE: useType, Float: value)	{
-	if (is_nullent(ent) || get_member_game(m_bRoundTerminating) || activator != caller || !IsPlayer(activator) \
-		|| get_member(activator, m_iTeam) != get_member(get_entvar(ent, var_owner), m_iTeam))
-		return;
+//clear entityes
+public CSGameRules_CleanUpMap_Post()	{
+	new ent = NULLENT;
 
-	caller = get_entvar(ent, var_owner);
+	while ((ent = rg_find_ent_by_class(ent, DEATH_CLASSNAME)))	{
+		engfunc(EngFunc_RemoveEntity, ent);
+	}
 
-	new retVal;
-	ExecuteForward(g_eForwards[Forward_ReviveStart], retVal, activator, caller);
-
-	if (retVal == PLUGIN_HANDLED)
-		return;
-
-	g_bActivator[activator] = true;
+	ArrayClear(g_aEntityData);
 }
+
+//Hook "+use" on entity
+public HamHook_ObjectCaps_Pre(const entity)	{
+	if (!FClassnameIs(entity, DEATH_CLASSNAME))
+		return HAM_IGNORED;
+
+	SetHamReturnInteger(FCAP_ONOFF_USE);
+
+	return HAM_OVERRIDE; //	Still calls the target function, but returns whatever is set with SetHamReturn*()
+} 
 
 public plugin_init()	{
 	RegisterHookChain(RG_CSGameRules_CleanUpMap, "CSGameRules_CleanUpMap_Post", 1);
@@ -167,8 +222,9 @@ public plugin_init()	{
 	register_message(get_user_msgid("ClCorpse"), "MessageHook_ClCorpse");
 
 	g_eForwards[Forward_ReviveStart] = CreateMultiForward("rt_revive_start", ET_CONTINUE, FP_CELL, FP_CELL);
-	g_eForwards[Forward_ReviveLoop] = CreateMultiForward("rt_revive_loop", ET_CONTINUE, FP_CELL, FP_CELL, FP_CELL);
-	g_eForwards[Forward_ReviveEnd] = CreateMultiForward("rt_revive_end", ET_CONTINUE, FP_CELL, FP_CELL);
+	g_eForwards[Forward_ReviveLoop_Pre] = CreateMultiForward("rt_revive_loop_pre", ET_CONTINUE, FP_CELL, FP_CELL, FP_CELL);
+	g_eForwards[Forward_ReviveLoop_Post] = CreateMultiForward("rt_revive_loop_post", ET_IGNORE, FP_CELL, FP_CELL, FP_CELL, FP_VAL_BYREF);
+	g_eForwards[Forward_ReviveEnd] = CreateMultiForward("rt_revive_end", ET_IGNORE, FP_CELL, FP_CELL, FP_CELL);
 }
 
 //need cvars in precache for death model
