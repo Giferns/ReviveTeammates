@@ -1,4 +1,4 @@
 # Auto detect text files and perform LF normalization
-*.sma = Pawn
-*.inc = Pawn
-*.mdl binary
+*.sma   diff=Pawn
+*.inc   diff=Pawn
+*.mdl   binary
