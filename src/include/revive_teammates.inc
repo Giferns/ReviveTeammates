@@ -27,6 +27,8 @@ forward rt_revive_start(const id, const activator);
 *
 * @note Can stoped by return PLUGIN_HANDLED
 *
+* @note timer can be 0.0
+*
 */
 forward rt_revive_loop_pre(const id, const activator, const timer);
 
@@ -38,8 +40,10 @@ forward rt_revive_loop_pre(const id, const activator, const timer);
 * @param timer      time to revive id
 * @param nextthink  Next think on used entity (default value 1.0)
 *
+* @note timer can't(!!!) be 0.0
+*
 */
-forward rt_revive_loop_post(const id, const activator, const Float: timer, Float: &nextthink);
+forward rt_revive_loop_post(const id, const activator, const Float: timer, &Float: nextthink);
 
 /**
 * Called after revive has been ending

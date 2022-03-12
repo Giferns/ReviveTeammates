@@ -31,22 +31,29 @@ enum forwards_struct	{
 new g_eCvars[cvars_struct];
 new g_eForwards[forwards_struct];
 
-new Array: g_aEntityData;
-
 public EntityHook_Use(const ent, const activator, caller, USE_TYPE: useType, Float: value)	{
 	if (is_nullent(ent) || get_member_game(m_bRoundTerminating) || activator != caller || !IsPlayer(activator) \
 		|| get_member(activator, m_iTeam) != get_member(get_entvar(ent, var_owner), m_iTeam))
 		return;
 
-	if (!ArraySize(g_aEntityData))	{
-		set_entvar(ent, var_fuser1, g_eCvars[Cvar__ReviveTime]);
-	}
+	set_entvar(ent, var_fuser1, g_eCvars[Cvar__ReviveTime]);
 
-	set_entvar(ent, var_iuser1, ArrayPushCell(g_aEntityData, activator));
+	new Array: aActivators = get_entvar(ent, var_iuser1);
+
+	if (!aActivators)
+		aActivators = ArrayCreate();
+
+	ArrayPushCell(aActivators, activator);
+	set_entvar(ent, var_iuser1, aActivators);
 }
 
 public EntityHook_Think(const ent)	{
 	if (is_nullent(ent))
+		return;
+
+	new Array: aActivators = get_entvar(ent, var_iuser1);
+
+	if (!aActivators)
 		return;
 
 	new Float: flNextThink = 1.0;
@@ -54,8 +61,8 @@ public EntityHook_Think(const ent)	{
 
 	new Float: flTimeUntilRespawn = get_entvar(ent, var_fuser1);
 
-	for (new i, activator; i < ArraySize(g_aEntityData); i++)	{
-		activator = ArrayGetCell(g_aEntityData, i);
+	for (new i, activator; i < ArraySize(aActivators); i++)	{
+		activator = ArrayGetCell(aActivators, i);
 
 		if (is_user_alive(player) || get_member(player, m_iTeam) == TEAM_SPECTATOR)	{
 			engfunc(EngFunc_RemoveEntity, ent);
@@ -65,7 +72,7 @@ public EntityHook_Think(const ent)	{
 		}
 
 		if (!(get_entvar(activator, var_button) & IN_USE))	{
-			ArrayDeleteItem(g_aEntityData, i);
+			ArrayDeleteItem(aActivators, i);
 			ExecuteForward(g_eForwards[Forward_ReviveEnd], _, player, activator, false /* success = false */);
 
 			return;
@@ -92,7 +99,18 @@ public EntityHook_Think(const ent)	{
 			rg_round_respawn(player);
 			rg_give_default_items(player);
 
+			set_entvar(player, var_health, g_eCvars[Cvar__RevivedHealth]);
+
+			new Float: flOrigin[3];
+			get_entvar(ent, var_origin, flOrigin);
+			engfunc(EngFunc_SetOrigin, player, flOrigin);
+
+			ArrayDestroy(aActivators);
+			engfunc(EngFunc_RemoveEntity, ent);
+
 			ExecuteForward(g_eForwards[Forward_ReviveEnd], _, player, activator, true /* success = true */);
+
+			return;
 		}
 
 		ExecuteForward(g_eForwards[Forward_ReviveLoop_Post], _, player, activator, flTimeUntilRespawn, flNextThink);
@@ -182,9 +200,6 @@ public MessageHook_ClCorpse()	{
 		//set_entvar(entity, var_gaitsequence, get_entvar(player, var_gaitsequence));
 	}
 
-	if (!g_aEntityData)
-		g_aEntityData = ArrayCreate();
-
 	set_entvar(entity, var_nextthink, get_gametime() + 0.01);
 
 	SetUse(entity, "EntityHook_Use");
@@ -197,11 +212,13 @@ public MessageHook_ClCorpse()	{
 public CSGameRules_CleanUpMap_Post()	{
 	new ent = NULLENT;
 
-	while ((ent = rg_find_ent_by_class(ent, DEATH_CLASSNAME)))	{
+	while ((ent = rg_find_ent_by_class(ent, DEATH_CLASSNAME)))	{		
+		new Array: aActivators = get_entvar(ent, var_iuser1);
+		if (aActivators)
+			ArrayDestroy(aActivators);
+
 		engfunc(EngFunc_RemoveEntity, ent);
 	}
-
-	ArrayClear(g_aEntityData);
 }
 
 //Hook "+use" on entity
