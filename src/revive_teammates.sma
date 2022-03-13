@@ -15,13 +15,16 @@ public stock const PluginURL[]      = "https://github.com/ma4ts";
 
 new const DEATH_CLASSNAME[]			= "death__model";
 
+const Float: MIN_USE_DELAY			= 1.0;
+
 enum cvars_struct	{
-	Cvar__ReviveTime, // Revive time in seconds
-	Cvar__RevivedHealth,
+	Float: Cvar__ReviveTime, // Revive time in seconds
+	Float: Cvar__RevivedHealth,
 	Cvar__DeathModel[MAX_RESOURCE_PATH_LENGTH] // Model
 };
 
 enum forwards_struct	{
+	Forward_OnReviveStart,
 	Forward_ReviveStart,
 	Forward_ReviveLoop_Pre,
 	Forward_ReviveLoop_Post,
@@ -31,17 +34,30 @@ enum forwards_struct	{
 new g_eCvars[cvars_struct];
 new g_eForwards[forwards_struct];
 
+new Float: g_flLastUse[MAX_PLAYERS + 1];
+
 public EntityHook_Use(const ent, const activator, caller, USE_TYPE: useType, Float: value)	{
 	if (is_nullent(ent) || get_member_game(m_bRoundTerminating) || activator != caller || !IsPlayer(activator) \
 		|| get_member(activator, m_iTeam) != get_member(get_entvar(ent, var_owner), m_iTeam))
 		return;
 
-	set_entvar(ent, var_fuser1, g_eCvars[Cvar__ReviveTime]);
+	new Float: gametime = get_gametime();
+
+	if (gametime < g_flLastUse[activator] - MIN_USE_DELAY)	{
+		return;
+	}
+	g_flLastUse[activator] = gametime;
 
 	new Array: aActivators = get_entvar(ent, var_iuser1);
 
 	if (!aActivators)
 		aActivators = ArrayCreate();
+
+	if (!ArraySize(aActivators))	{
+		set_entvar(ent, var_fuser1, g_eCvars[Cvar__ReviveTime]);
+		
+		ExecuteForward(g_eForwards[Forward_OnReviveStart], _, get_entvar(ent, var_owner), activator);
+	}
 
 	ArrayPushCell(aActivators, activator);
 	set_entvar(ent, var_iuser1, aActivators);
@@ -52,11 +68,13 @@ public EntityHook_Think(const ent)	{
 		return;
 
 	new Array: aActivators = get_entvar(ent, var_iuser1);
-
-	if (!aActivators)
-		return;
-
 	new Float: flNextThink = 1.0;
+
+	if (!aActivators)	{
+		set_entvar(ent, var_nextthink, get_gametime() + flNextThink);
+		return;
+	}
+
 	new player = get_entvar(ent, var_owner);
 
 	new Float: flTimeUntilRespawn = get_entvar(ent, var_fuser1);
@@ -75,14 +93,18 @@ public EntityHook_Think(const ent)	{
 			ArrayDeleteItem(aActivators, i);
 			ExecuteForward(g_eForwards[Forward_ReviveEnd], _, player, activator, false /* success = false */);
 
+			set_entvar(ent, var_nextthink, get_gametime() + flNextThink);
+
 			return;
 		}
 
 		new retVal;
-		ExecuteForward(g_eForwards[Forward_ReviveStart], retVal, activator, get_entvar(ent, var_owner));
+		ExecuteForward(g_eForwards[Forward_ReviveStart], retVal, player, activator);
 
 		if (retVal == PLUGIN_HANDLED)	{
 			ExecuteForward(g_eForwards[Forward_ReviveEnd], _, player, activator, false /* success = false */);
+
+			set_entvar(ent, var_nextthink, get_gametime() + flNextThink);
 
 			return;
 		}
@@ -91,6 +113,8 @@ public EntityHook_Think(const ent)	{
 
 		if (retVal == PLUGIN_HANDLED)	{
 			ExecuteForward(g_eForwards[Forward_ReviveEnd], _, player, activator, false /* success = false */);
+
+			set_entvar(ent, var_nextthink, get_gametime() + flNextThink);
 
 			return;
 		}
@@ -103,6 +127,9 @@ public EntityHook_Think(const ent)	{
 
 			new Float: flOrigin[3];
 			get_entvar(ent, var_origin, flOrigin);
+
+			flOrigin[2] += 30.0;
+
 			engfunc(EngFunc_SetOrigin, player, flOrigin);
 
 			ArrayDestroy(aActivators);
@@ -172,20 +199,20 @@ public MessageHook_ClCorpse()	{
 	entityData[entity_angles][coord_y] = get_msg_arg_float(arg_angle_y);
 	entityData[entity_angles][coord_z] = get_msg_arg_float(arg_angle_z);
 
-	new szTemp[MAX_RESOURCE_PATH_LENGTH], bool: bCustomModel;
+	new szTemp[MAX_RESOURCE_PATH_LENGTH], szModel[MAX_RESOURCE_PATH_LENGTH], bool: bCustomModel;
 
-	bCustomModel = bool: (g_eCvars[Cvar__DeathModel] || g_eCvars[Cvar__DeathModel][0] != '0');
+	bCustomModel = bool: (g_eCvars[Cvar__DeathModel][0] != EOS);
 
 	if (bCustomModel)
-		copy(szTemp, charsmax(szTemp), g_eCvars[Cvar__DeathModel]);
+		copy(szModel, charsmax(szModel), g_eCvars[Cvar__DeathModel]);
 	else	{
 		get_msg_arg_string(arg_model, szTemp, charsmax(szTemp));
-		formatex(szTemp, charsmax(szTemp), "models/player/%s/%s.mdl", szTemp, szTemp);
+		formatex(szModel, charsmax(szModel), "models/player/%s/%s.mdl", szTemp, szTemp);
 	}
 
 	new player = get_msg_arg_int(arg_player_id);
 
-	engfunc(EngFunc_SetModel, entity, szTemp);
+	engfunc(EngFunc_SetModel, entity, szModel);
 	engfunc(EngFunc_SetOrigin, entity, entityData[entity_coords]);
 
 	set_entvar(entity, var_classname, DEATH_CLASSNAME);
@@ -238,6 +265,7 @@ public plugin_init()	{
 
 	register_message(get_user_msgid("ClCorpse"), "MessageHook_ClCorpse");
 
+	g_eForwards[Forward_OnReviveStart] = CreateMultiForward("rt_on_revive_start", ET_IGNORE, FP_CELL, FP_CELL);
 	g_eForwards[Forward_ReviveStart] = CreateMultiForward("rt_revive_start", ET_CONTINUE, FP_CELL, FP_CELL);
 	g_eForwards[Forward_ReviveLoop_Pre] = CreateMultiForward("rt_revive_loop_pre", ET_CONTINUE, FP_CELL, FP_CELL, FP_CELL);
 	g_eForwards[Forward_ReviveLoop_Post] = CreateMultiForward("rt_revive_loop_post", ET_IGNORE, FP_CELL, FP_CELL, FP_CELL, FP_VAL_BYREF);
@@ -248,23 +276,23 @@ public plugin_init()	{
 public plugin_precache()	{
 	register_plugin(PluginName, PluginVersion, PluginAuthor);
 
-	new szTemp[64], pCvar;
+	new pCvar;
 
 	pCvar = create_cvar(
 		"rt_revive_time",
-		"7",
+		"7.0",
 		_, // FCVAR_NONE
 		"Revive time in seconds"
 	);
-	bind_pcvar_num(pCvar, g_eCvars[Cvar__ReviveTime]);
+	bind_pcvar_float(pCvar, g_eCvars[Cvar__ReviveTime]);
 
 	pCvar = create_cvar(
 		"rt_revived_health",
-		"50",
+		"50.0",
 		_, // FCVAR_NONE
 		"How much health to give to a reborn player?"
 	);
-	bind_pcvar_num(pCvar, g_eCvars[Cvar__RevivedHealth]);
+	bind_pcvar_float(pCvar, g_eCvars[Cvar__RevivedHealth]);
 
 	pCvar = create_cvar(
 		"rt_death_model",
@@ -273,19 +301,17 @@ public plugin_precache()	{
 		"Model on death player^n@note U can leave an empty value"
 	);
 
-	bind_pcvar_string(pCvar, szTemp, charsmax(szTemp));
+	bind_pcvar_string(pCvar, g_eCvars[Cvar__DeathModel], charsmax(g_eCvars[Cvar__DeathModel]));
 
 	#if defined AUTO_CREATE_CONFIG
 		AutoExecConfig(true, "revive_teammates");
 	#endif
 
-	if (szTemp[0])	{
-		if (file_exists(szTemp))	{
-			precache_model(szTemp);
-
-			copy(g_eCvars[Cvar__DeathModel], charsmax(g_eCvars[Cvar__DeathModel]), szTemp);
+	if (g_eCvars[Cvar__DeathModel][0])	{
+		if (file_exists(g_eCvars[Cvar__DeathModel]))	{
+			precache_model(g_eCvars[Cvar__DeathModel]);
 		}
 		else
-			log_error(AMX_ERR_NATIVE, "Model '%s' is not exists", szTemp);
+			log_error(AMX_ERR_NATIVE, "Model '%s' is not exists", g_eCvars[Cvar__DeathModel]);
 	}
 }

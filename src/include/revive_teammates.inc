@@ -13,6 +13,15 @@
 * @param id         player id who can be revived
 * @param activator  player id who can revive
 *
+*/
+forward rt_on_revive_start(const id, const activator);
+
+/**
+* Called before activator starting the revive
+*
+* @param id         player id who can be revived
+* @param activator  player id who can revive
+*
 * @note Can stoped by return PLUGIN_HANDLED
 *
 */
