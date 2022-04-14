@@ -1,8 +1,7 @@
 # ReviveTeammates
 
 ## API
-<
-/**
+`/**
 * Called before activator starting the revive (on press USE - `E`)
 *
 * @param id         player id who can be revived
@@ -57,5 +56,4 @@ forward rt_revive_loop_post(const id, const activator, const Float: timer, &Floa
 * @param success    true if revive successeed, false otherwise
 *
 */
-forward rt_revive_end(const id, const activator, bool: success);
->
+forward rt_revive_end(const id, const activator, bool: success);`
