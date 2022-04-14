@@ -6,7 +6,7 @@
 #include <reapi>
 
 public stock const PluginName[]     = "Revive teammates: Core";
-public stock const PluginVersion[]  = "0.1.0";
+public stock const PluginVersion[]  = "0.0.2";
 public stock const PluginAuthor[]   = "m4ts";
 public stock const PluginURL[]      = "https://github.com/ma4ts";
 
@@ -43,7 +43,7 @@ public EntityHook_Use(const ent, const activator, caller, USE_TYPE: useType, Flo
 
 	new Float: gametime = get_gametime();
 
-	if (gametime < g_flLastUse[activator] - MIN_USE_DELAY)	{
+	if (gametime < g_flLastUse[activator] + MIN_USE_DELAY)	{
 		return;
 	}
 	g_flLastUse[activator] = gametime;
@@ -128,7 +128,6 @@ public EntityHook_Think(const ent)	{
 			new Float: flOrigin[3];
 			get_entvar(ent, var_origin, flOrigin);
 
-			//fcking coprse got Y origin under the ground
 			flOrigin[2] += 30.0;
 
 			engfunc(EngFunc_SetOrigin, player, flOrigin);
