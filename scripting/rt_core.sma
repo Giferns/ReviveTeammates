@@ -37,8 +37,8 @@ public plugin_init()
 	bind_pcvar_float(create_cvar("rt_revive_antiflood", "3.0", FCVAR_NONE, "Duration of anti-flood resurrection(in seconds)", true, 1.0), g_eCvars[ANTIFLOOD_TIME]);
 
 	g_eForwards[ReviveStart] = CreateMultiForward("rt_revive_start", ET_CONTINUE, FP_CELL, FP_CELL, FP_CELL);
-	g_eForwards[ReviveLoop_Pre] = CreateMultiForward("rt_revive_loop_pre", ET_CONTINUE, FP_CELL, FP_CELL, FP_CELL, FP_CELL);
-	g_eForwards[ReviveLoop_Post] = CreateMultiForward("rt_revive_loop_post", ET_IGNORE, FP_CELL, FP_CELL, FP_CELL, FP_CELL);
+	g_eForwards[ReviveLoop_Pre] = CreateMultiForward("rt_revive_loop_pre", ET_CONTINUE, FP_CELL, FP_CELL, FP_CELL, FP_CELL, FP_CELL);
+	g_eForwards[ReviveLoop_Post] = CreateMultiForward("rt_revive_loop_post", ET_IGNORE, FP_CELL, FP_CELL, FP_CELL, FP_CELL, FP_CELL);
 	g_eForwards[ReviveEnd] = CreateMultiForward("rt_revive_end", ET_IGNORE, FP_CELL, FP_CELL, FP_CELL);
 	g_eForwards[ReviveCancelled] = CreateMultiForward("rt_revive_cancelled", ET_IGNORE, FP_CELL, FP_CELL, FP_CELL);
 }
@@ -160,6 +160,7 @@ public Corpse_Think(const iEnt)
 	}
 
 	new TeamName:iActTeam = get_member(iActivator, m_iTeam), TeamName:iPlTeam = get_member(iPlayer, m_iTeam);
+	new modes_struct: eCurrentMode = (iActTeam == iPlTeam) ? MODE_REVIVE : MODE_PLANT;
 	
 	new Float:flTimeUntil = get_entvar(iEnt, var_fuser1);
 	
@@ -167,36 +168,22 @@ public Corpse_Think(const iEnt)
 	{
 		flTimeUntil = g_eCvars[REVIVE_TIME];
 		set_entvar(iEnt, var_fuser1, flTimeUntil);
-		
-		if(iActTeam == iPlTeam)
-		{
-			ExecuteForward(g_eForwards[ReviveCancelled], _, iPlayer, iActivator, MODE_REVIVE);
-		}
-		else
-		{
-			ExecuteForward(g_eForwards[ReviveCancelled], _, iPlayer, iActivator, MODE_PLANT);
-		}
+
+		ExecuteForward(g_eForwards[ReviveCancelled], _, iPlayer, iActivator, eCurrentMode);
 
 		return;
 	}
 	
 	new fwRet;
 	
-	ExecuteForward(g_eForwards[ReviveLoop_Pre], fwRet, iPlayer, iActivator, flTimeUntil, flNextThink);
+	ExecuteForward(g_eForwards[ReviveLoop_Pre], fwRet, iPlayer, iActivator, flTimeUntil, flNextThink, eCurrentMode);
 	
 	if(fwRet == PLUGIN_HANDLED)
 	{
 		flTimeUntil = g_eCvars[REVIVE_TIME];
 		set_entvar(iEnt, var_fuser1, flTimeUntil);
 
-		if(iActTeam == iPlTeam)
-		{
-			ExecuteForward(g_eForwards[ReviveCancelled], _, iPlayer, iActivator, MODE_REVIVE);
-		}
-		else
-		{
-			ExecuteForward(g_eForwards[ReviveCancelled], _, iPlayer, iActivator, MODE_PLANT);
-		}
+		ExecuteForward(g_eForwards[ReviveCancelled], _, iPlayer, iActivator, eCurrentMode);
 		
 		return;
 	}
@@ -218,7 +205,7 @@ public Corpse_Think(const iEnt)
 			
 			UTIL_RemoveAllEnts(iPlayer);
 
-			ExecuteForward(g_eForwards[ReviveEnd], _, iPlayer, iActivator, MODE_REVIVE);
+			ExecuteForward(g_eForwards[ReviveEnd], _, iPlayer, iActivator, eCurrentMode);
 
 			return;
 		}
@@ -228,13 +215,13 @@ public Corpse_Think(const iEnt)
 
 			client_print_color(iActivator, print_team_red, "%L %L", iActivator, "RT_CHAT_TAG", iActivator, "RT_PLANTING", iPlayer);
 			
-			ExecuteForward(g_eForwards[ReviveEnd], _, iPlayer, iActivator, MODE_PLANT);
+			ExecuteForward(g_eForwards[ReviveEnd], _, iPlayer, iActivator, eCurrentMode);
 
 			return;
 		}
 	}
 	
-	ExecuteForward(g_eForwards[ReviveLoop_Post], _, iPlayer, iActivator, flTimeUntil, flNextThink);
+	ExecuteForward(g_eForwards[ReviveLoop_Post], _, iPlayer, iActivator, flTimeUntil, flNextThink, eCurrentMode);
 	
 	set_entvar(iEnt, var_fuser1, flTimeUntil);
 	set_entvar(iEnt, var_nextthink, get_gametime() + flNextThink);

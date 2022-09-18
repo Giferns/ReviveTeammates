@@ -12,7 +12,7 @@
 #include <hamsandwich>
 #include <reapi>
 
-#define VERSION "0.0.1"
+#define VERSION "0.1.0"
 #define AUTHORS "ufame & Albertio"
 
 enum modes_struct
@@ -42,13 +42,14 @@ forward rt_revive_start(const id, const activator, const modes_struct:mode);
 * @param activator  player id who can revive
 * @param timer      time to revive id
 * @param nextthink  Next think on used entity (default value 1.0)
+* @param mode       MODE_REVIVE - the player was resurrected, MODE_PLANT - the player was mined
 *
 * @note Can stoped by return PLUGIN_HANDLED
 *
 * @note timer can be 0.0
 *
 */
-forward rt_revive_loop_pre(const id, const activator, const Float:timer, Float:nextthink);
+forward rt_revive_loop_pre(const id, const activator, const Float:timer, Float:nextthink, modes_struct: mode);
 
 /**
 * Think on revive :: POST
@@ -57,11 +58,12 @@ forward rt_revive_loop_pre(const id, const activator, const Float:timer, Float:n
 * @param activator  player id who can revive
 * @param timer      time to revive id
 * @param nextthink  Next think on used entity (default value 1.0)
+* @param mode       MODE_REVIVE - the player was resurrected, MODE_PLANT - the player was mined
 *
 * @note timer can't(!!!) be 0.0
 *
 */
-forward rt_revive_loop_post(const id, const activator, const Float:timer, Float:nextthink);
+forward rt_revive_loop_post(const id, const activator, const Float:timer, Float:nextthink, modes_struct: mode);
 
 /**
 * Called after revive has been ending
