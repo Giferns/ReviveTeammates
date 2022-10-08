@@ -4,6 +4,14 @@
 #define MAX_SOUNDS_PER_SECTION 10
 #define MAX_SOUND_LENGTH 64
 
+enum CVARS
+{
+	Float:SOUND_RADIUS,
+	NEARBY_PLAYERS
+};
+
+new g_eCvars[CVARS];
+
 enum sections_struct
 {
 	SECTION_REVIVE_START,
@@ -37,6 +45,17 @@ public plugin_precache()
 	INI_SetReaders(iParser, "ReadValues", "ReadNewSection");
 	INI_ParseFile(iParser, szFile);
 	INI_DestroyParser(iParser);
+}
+
+public plugin_init()
+{
+	bind_pcvar_float(create_cvar("rt_sound_radius", "250.0", FCVAR_NONE, "The radius in which to count the nearest players", true, 1.0), g_eCvars[SOUND_RADIUS]);
+	bind_pcvar_num(create_cvar("rt_nearby_players", "1", FCVAR_NONE, "Playback of the resurrection/planting end sound for nearby players", true, 0.0), g_eCvars[NEARBY_PLAYERS]);
+}
+
+public plugin_cfg()
+{
+	UTIL_UploadConfigs();
 }
 
 public rt_revive_start(const id, const activator, const modes_struct:mode)
@@ -94,14 +113,28 @@ public rt_revive_end(const id, const activator, const modes_struct:mode)
 		{
 			if(g_iSounds[SECTION_REVIVE_END])
 			{
-				rg_send_audio(activator, g_szSounds[SECTION_REVIVE_END][random(g_iSounds[SECTION_REVIVE_END])]);
+				if(g_eCvars[NEARBY_PLAYERS])
+				{
+					PlaybackSoundNearbyPlayers(id, g_szSounds[SECTION_REVIVE_END][random(g_iSounds[SECTION_REVIVE_END])]);
+				}
+				else
+				{
+					rg_send_audio(activator, g_szSounds[SECTION_REVIVE_END][random(g_iSounds[SECTION_REVIVE_END])]);
+				}
 			}
-			}
+		}
 		case MODE_PLANT:
 		{
 			if(g_iSounds[SECTION_PLANT_END])
 			{
-				rg_send_audio(activator, g_szSounds[SECTION_PLANT_END][random(g_iSounds[SECTION_PLANT_END])]);
+				if(g_eCvars[NEARBY_PLAYERS])
+				{
+					PlaybackSoundNearbyPlayers(id, g_szSounds[SECTION_PLANT_END][random(g_iSounds[SECTION_PLANT_END])]);
+				}
+				else
+				{
+					rg_send_audio(activator, g_szSounds[SECTION_PLANT_END][random(g_iSounds[SECTION_PLANT_END])]);
+				}
 			}
 		}
 	}
@@ -161,4 +194,19 @@ public ReadValues(INIParser:iParser, const szKey[], const szValue[])
 	precache_sound(szSound);
 	
 	return true;
+}
+
+stock PlaybackSoundNearbyPlayers(const id, szSound[])
+{
+	new iPlayer = NULLENT, Float:vOrigin[3];
+	
+	get_entvar(id, var_origin, vOrigin);
+	
+	while((iPlayer = find_ent_in_sphere(iPlayer, vOrigin, g_eCvars[SOUND_RADIUS])) != 0)
+	{
+		if(ExecuteHam(Ham_IsPlayer, iPlayer))
+		{
+			rg_send_audio(iPlayer, szSound);
+		}
+	}
 }

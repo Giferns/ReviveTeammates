@@ -11,8 +11,9 @@
 #include <fakemeta>
 #include <hamsandwich>
 #include <reapi>
+#include <xs>
 
-#define VERSION "0.3.0"
+#define VERSION "0.4.0"
 #define AUTHORS "ufame & Albertio"
 
 enum modes_struct
@@ -148,19 +149,25 @@ stock UTIL_UploadConfigs()
 }
 
 /*
-* Get position of the bones of the corpse
+* Get the nearest bone of the corpses
 */
-stock UTIL_GetPositionBonesCorpse(const iEnt, Float:vOrigin[6][3])
+stock UTIL_GetNearestBoneCorpse(const iEnt, const activator)
 {
-	static const iBonesCorpse[] = {0, 8, 17, 31, 43, 49};
-	new Float:vBoneOrigin[6][3];
-	
-	for(new i; i < sizeof(iBonesCorpse); i++)
-	{
-		engfunc(EngFunc_GetBonePosition, iEnt, iBonesCorpse[i], vBoneOrigin[i]);
-	}
+	new Float:vPlOrigin[3], Float:vBoneOrigin[3];
 
-	vOrigin = vBoneOrigin;
+	get_entvar(activator, var_origin, vPlOrigin);
+
+	for(new iBone = 1; iBone <= 54; iBone++)
+	{
+		engfunc(EngFunc_GetBonePosition, iEnt, iBone, vBoneOrigin);
+ 
+		if(is_in_viewcone(activator, vBoneOrigin) && get_distance_f(vPlOrigin, vBoneOrigin) <= 64.0)
+		{
+			return iBone;
+		}
+	}
+ 
+	return 0;
 }
 
 /*
