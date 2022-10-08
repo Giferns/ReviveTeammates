@@ -63,14 +63,14 @@ public rt_revive_start(const id, const activator, const modes_struct:mode)
 			
 			if(g_eCvars[REVIVE_GLOW][0] != EOS)
 			{
-				rg_set_rendering(iEnt, kRenderFxGlowShell, g_eGlowColors[REVIVE_COLOR], kRenderGlow, 30.0);
+				rg_set_rendering(iEnt, kRenderFxGlowShell, g_eGlowColors[REVIVE_COLOR], kRenderNormal, 30.0);
 			}
 		}
 		case MODE_PLANT:
 		{
 			if(g_eCvars[PLANTING_GLOW][0] != EOS)
 			{
-				rg_set_rendering(iEnt, kRenderFxGlowShell, g_eGlowColors[PLANTING_COLOR], kRenderGlow, 30.0);
+				rg_set_rendering(iEnt, kRenderFxGlowShell, g_eGlowColors[PLANTING_COLOR], kRenderNormal, 30.0);
 			}
 		}
 	}

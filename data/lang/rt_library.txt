@@ -1,6 +1,6 @@
 [en]
 RT_CHAT_TAG = ^4[RT]
-RT_ANTI_FLOOD = ^3Wait before the next resurrection
+RT_ANTI_FLOOD = ^3Wait before the next resurrection/planting
 RT_REVIVE = ^3You have resurrected the player ^4%n
 RT_PLANTING = ^3You have planted the player ^4%n
 RT_PLANTING_COUNT = ^3You have exhausted the planting limit per round
@@ -15,10 +15,13 @@ RT_TIMER_REVIVE = ^3You have begun to resurrect ^4%n
 RT_TIMER_PLANT = ^3You have begun to planting ^4%n
 RT_CANCELLED_REVIVE = ^3You canceled the resurrection ^4%n
 RT_CANCELLED_PLANT = ^3You canceled the planting ^4%n
+RT_DHUD_REVIVE = YOU'RE RESURRECTING %n
+RT_DHUD_REVIVE2 = %n RESURRECTS YOU
+RT_DHUD_PLANTING = YOU'RE PLANTING %n
 
 [ru]
 RT_CHAT_TAG = ^4[RT]
-RT_ANTI_FLOOD = ^3Подождите перед следующим воскрешением
+RT_ANTI_FLOOD = ^3Подождите перед следующим воскрешением/минированием
 RT_REVIVE = ^3Вы воскресили игрока ^4%n
 RT_PLANTING = ^3Вы заминировали игрока ^4%n
 RT_PLANTING_COUNT = ^3Вы исчерпали лимит минирований за раунд
@@ -33,3 +36,6 @@ RT_TIMER_REVIVE = ^3Вы начали воскрешать ^4%n
 RT_TIMER_PLANT = ^3Вы начали минировать ^4%n
 RT_CANCELLED_REVIVE = ^3Вы отменили воскрешение ^4%n
 RT_CANCELLED_PLANT = ^3Вы отменили минирование ^4%n
+RT_DHUD_REVIVE = ВЫ ВОСКРЕШАЕТЕ %n
+RT_DHUD_REVIVE2 = ВАС ВОСКРЕШАЕТ %n
+RT_DHUD_PLANTING = ВЫ МИНИРУЕТЕ %n

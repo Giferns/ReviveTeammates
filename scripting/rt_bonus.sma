@@ -25,7 +25,7 @@ public plugin_init()
 
 	bind_pcvar_string(create_cvar("rt_weapons", "weapon_knife weapon_deagle", FCVAR_NONE, "What weapons should be given to the player after resurrection(no more than 6)(otherwise standard from game.cfg)"), g_eCvars[WEAPONS], charsmax(g_eCvars[WEAPONS]));
 	bind_pcvar_float(create_cvar("rt_health", "100.0", FCVAR_NONE, "The number of health of the resurrected player", true, 1.0), g_eCvars[HEALTH]);
-	bind_pcvar_num(create_cvar("rt_armor_type", "2", FCVAR_NONE, "0 - do not issue armor, 1 - bulletproof vest, 2 - bulletproof vest with helmet", true, 1.0), g_eCvars[ARMOR_TYPE]);
+	bind_pcvar_num(create_cvar("rt_armor_type", "2", FCVAR_NONE, "0 - do not issue armor, 1 - bulletproof vest, 2 - bulletproof vest with helmet", true, 0.0), g_eCvars[ARMOR_TYPE]);
 	bind_pcvar_num(create_cvar("rt_armor", "100", FCVAR_NONE, "Number of armor of the resurrected player", true, 1.0), g_eCvars[ARMOR]);
 	bind_pcvar_num(create_cvar("rt_frags", "1", FCVAR_NONE, "Number of frags for resurrection", true, 1.0), g_eCvars[FRAGS]);
 
@@ -66,6 +66,8 @@ public rt_revive_end(const id, const activator, const modes_struct:mode)
 
 		if(g_szWeapon[0][0] != EOS)
 		{
+			rg_remove_all_items(id);
+
 			for(new i; i <= g_iWeapons; i++)
 			{
 				rg_give_item(id, g_szWeapon[i]);

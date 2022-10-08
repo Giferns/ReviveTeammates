@@ -17,8 +17,7 @@ new const TIMER_REPLACE_WITH[]	= "| |";
 new g_iHudSyncObj;
 
 new g_szTimer[MAX_PLAYERS + 1][64];
-
-new g_iTime;
+new Float:g_fTime;
 
 public plugin_init()
 {
@@ -26,11 +25,9 @@ public plugin_init()
 
 	register_dictionary("rt_library.txt");
 
-	bind_pcvar_num(create_cvar("rt_timer_type", "2", FCVAR_NONE, "0 - chat, 1 - HUD, 2 - bartime(strip)", true, 0.0), g_eCvars[TIMER_TYPE]);
+	bind_pcvar_num(create_cvar("rt_timer_type", "1", FCVAR_NONE, "0 - HUD, 1 - bartime(strip)", true, 0.0), g_eCvars[TIMER_TYPE]);
 	
-	g_iTime = get_pcvar_num(get_cvar_pointer("rt_revive_time"));
-	
-	if(g_eCvars[TIMER_TYPE] == 1)
+	if(g_eCvars[TIMER_TYPE] == 0)
 	{
 		g_iHudSyncObj = CreateHudSyncObj();
 	}
@@ -39,11 +36,13 @@ public plugin_init()
 public plugin_cfg()
 {
 	UTIL_UploadConfigs();
+
+	g_fTime = get_pcvar_float(get_cvar_pointer("rt_revive_time"));
 }
 
 public rt_revive_start(const id, const activator, const modes_struct:mode)
 {
-	new modes_struct:iMode = get_entvar(id, var_euser1);
+	new modes_struct:iMode = get_entvar(id, var_iuser3);
 	
 	if(iMode != MODE_PLANT)
 	{
@@ -51,43 +50,32 @@ public rt_revive_start(const id, const activator, const modes_struct:mode)
 		{
 			case 0:
 			{
-				if(mode == MODE_REVIVE)
-				{
-					client_print_color(activator, print_team_blue, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_TIMER_REVIVE", id);
-				}
-				else if(mode == MODE_PLANT)
-				{
-					client_print_color(activator, print_team_blue, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_TIMER_PLANT", id);
-				}
-			}
-			case 1:
-			{
 				formatex(g_szTimer[id], charsmax(g_szTimer[]), TIMER_BEGIN);
 
-				for(new i; i < g_iTime; i++)
+				for(new i; i < floatround(g_fTime); i++)
 				{
 					add(g_szTimer[id], charsmax(g_szTimer[]), TIMER_ADD);
 				}
 
 				add(g_szTimer[id], charsmax(g_szTimer[]), TIMER_END);
 
-				display_timer(activator, id, .holdtime = 1.0);
+				DisplayHUDMessage(activator, id, mode);
 			}
-			case 2:
+			case 1:
 			{
-				rg_send_bartime(activator, g_iTime);
+				rg_send_bartime(activator, floatround(g_fTime));
 			}
 		}
 	}
 }
 
-public rt_revive_loop_post(const id, const activator, const Float:timer, Float:nextthink)
+public rt_revive_loop_post(const id, const activator, const Float:timer, modes_struct:mode)
 {
-	if(g_eCvars[TIMER_TYPE] == 1)
+	if(g_eCvars[TIMER_TYPE] == 0)
 	{
 		replace(g_szTimer[id], charsmax(g_szTimer[]), TIMER_REPLACE_SYMB, TIMER_REPLACE_WITH);
 
-		display_timer(activator, id, nextthink);
+		DisplayHUDMessage(activator, id, mode);
 	}
 }
 
@@ -97,31 +85,28 @@ public rt_revive_cancelled(const id, const activator, const modes_struct:mode)
 	{
 		case 0:
 		{
-			if(mode == MODE_REVIVE)
-			{
-				client_print_color(activator, print_team_blue, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_CANCELLED_REVIVE", id);
-			}
-			else if(mode == MODE_PLANT)
-			{
-				client_print_color(activator, print_team_blue, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_CANCELLED_PLANT", id);
-			}
-		}
-		case 1:
-		{
 			ClearSyncHud(activator, g_iHudSyncObj);
 		}
-		case 2:
+		case 1:
 		{
 			rg_send_bartime(activator, 0);
 		}
 	}
 }
 
-stock display_timer(id, dead, Float:holdtime)
+stock DisplayHUDMessage(id, dead, const modes_struct:mode)
 {
-	if(g_eCvars[TIMER_TYPE] == 1)
+	switch(mode)
 	{
-		set_hudmessage(55, 155, 55, -1.0, 0.61, .holdtime = holdtime);
-		ShowSyncHudMsg(id, g_iHudSyncObj, g_szTimer[dead]);
+		case MODE_REVIVE:
+		{
+			set_hudmessage(0, 255, 0, -1.0, 0.61, .holdtime = g_fTime);
+		}
+		case MODE_PLANT:
+		{
+			set_hudmessage(255, 0, 0, -1.0, 0.61, .holdtime = g_fTime);
+		}
 	}
+	
+	ShowSyncHudMsg(id, g_iHudSyncObj, g_szTimer[dead]);
 }

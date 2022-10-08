@@ -58,7 +58,7 @@ public CSGameRules_CleanUpMap_Post()
 
 public rt_revive_start(const id, const activator, const modes_struct:mode)
 {
-	if(get_entvar(id, var_euser1) == MODE_PLANT)
+	if(get_entvar(id, var_iuser3) == MODE_PLANT)
 	{
 		if(g_ePlayerData[activator][PLANTING_COUNT] >= g_eCvars[MAX_PLANTING])
 		{
@@ -73,12 +73,10 @@ public rt_revive_start(const id, const activator, const modes_struct:mode)
 		}
 
 		new Float:vOrigin[3];
-		
 		get_entvar(activator, var_origin, vOrigin);
-		
 		UTIL_MakeExplosionEffects(vOrigin);
 		
-		new iMiner = get_entvar(id, var_euser2);
+		new iMiner = get_entvar(id, var_iuser4);
 		
 		for(new iVictim = 1, Float:fReduceDamage, Float:vecEnd[3]; iVictim <= MaxClients; iVictim++)
 		{
@@ -99,9 +97,9 @@ public rt_revive_start(const id, const activator, const modes_struct:mode)
 			ExecuteHamB(Ham_TakeDamage, iVictim, id, iMiner, fReduceDamage, DMG_GRENADE | DMG_ALWAYSGIB);
 		}
 
-		set_entvar(id, var_euser1, MODE_NONE);
+		set_entvar(id, var_iuser3, MODE_NONE);
 
-		UTIL_RemoveAllEnts(id);
+		UTIL_RemoveCorpses(id);
 	}
 
 	return PLUGIN_CONTINUE;
@@ -111,8 +109,8 @@ public rt_revive_end(const id, const activator, const modes_struct:mode)
 {
 	if(mode == MODE_PLANT)
 	{
-		set_entvar(id, var_euser1, mode);
-		set_entvar(id, var_euser2, activator);
+		set_entvar(id, var_iuser3, mode);
+		set_entvar(id, var_iuser4, activator);
 	}
 }
 

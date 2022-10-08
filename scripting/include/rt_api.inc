@@ -2,17 +2,17 @@
 // Revive Teammates API //
 //////////////////////////
 
-#if defined _revive_teammates_included
+#if defined _rt_api_included
   #endinput
 #endif
-#define _revive_teammates_included
+#define _rt_api_included
 
 #include <engine>
 #include <fakemeta>
 #include <hamsandwich>
 #include <reapi>
 
-#define VERSION "0.1.0"
+#define VERSION "0.2.0"
 #define AUTHORS "ufame & Albertio"
 
 enum modes_struct
@@ -22,7 +22,6 @@ enum modes_struct
 	MODE_PLANT
 };
 
-new const RT_TASK_INDEX = 19691;
 new const DEAD_BODY_CLASSNAME[] = "rt_corpse_empty";
 
 /**
@@ -41,7 +40,6 @@ forward rt_revive_start(const id, const activator, const modes_struct:mode);
 * @param id         player id who can be revived
 * @param activator  player id who can revive
 * @param timer      time to revive id
-* @param nextthink  Next think on used entity (default value 1.0)
 * @param mode       MODE_REVIVE - the player was resurrected, MODE_PLANT - the player was mined
 *
 * @note Can stoped by return PLUGIN_HANDLED
@@ -49,7 +47,7 @@ forward rt_revive_start(const id, const activator, const modes_struct:mode);
 * @note timer can be 0.0
 *
 */
-forward rt_revive_loop_pre(const id, const activator, const Float:timer, Float:nextthink, modes_struct: mode);
+forward rt_revive_loop_pre(const id, const activator, const Float:timer, modes_struct:mode);
 
 /**
 * Think on revive :: POST
@@ -57,13 +55,12 @@ forward rt_revive_loop_pre(const id, const activator, const Float:timer, Float:n
 * @param id         player id who can be revived
 * @param activator  player id who can revive
 * @param timer      time to revive id
-* @param nextthink  Next think on used entity (default value 1.0)
 * @param mode       MODE_REVIVE - the player was resurrected, MODE_PLANT - the player was mined
 *
 * @note timer can't(!!!) be 0.0
 *
 */
-forward rt_revive_loop_post(const id, const activator, const Float:timer, Float:nextthink, modes_struct: mode);
+forward rt_revive_loop_post(const id, const activator, const Float:timer, modes_struct:mode);
 
 /**
 * Called after revive has been ending
@@ -88,45 +85,45 @@ forward rt_revive_cancelled(const id, const activator, const modes_struct:mode);
 /*
 * Removal of corpses
 */
-stock UTIL_RemoveAllEnts(iPlayer = 0)
+stock UTIL_RemoveCorpses(const id = 0)
 {
-	new iEntity = NULLENT;
+	new iEnt = NULLENT;
 
-	while((iEntity = rg_find_ent_by_class(iEntity, DEAD_BODY_CLASSNAME)) > 0)
+	while((iEnt = rg_find_ent_by_class(iEnt, DEAD_BODY_CLASSNAME)) > 0)
 	{
-		if(iPlayer && get_entvar(iEntity, var_owner) != iPlayer)
+		if(id && get_entvar(iEnt, var_owner) != id)
 		{
 			continue;
 		}
 		
-		SetThink(iEntity, "");
+		SetThink(iEnt, NULL_STRING);
 
-		set_task(0.1, "DeleteEntity", RT_TASK_INDEX + iEntity);
+		RequestFrame("DeleteEntity", iEnt);
 	}
 }
 
 public DeleteEntity(iEnt)
 {
-	engfunc(EngFunc_RemoveEntity, iEnt - RT_TASK_INDEX);
+	engfunc(EngFunc_RemoveEntity, iEnt);
 }
 
 /*
 * Get Entity by Player id
 */
-stock UTIL_GetEntityById(id)
+stock UTIL_GetEntityById(const id)
 {
 	if(!is_user_connected(id))
 	{
 		return NULLENT;
 	}
 
-	new iEntity = NULLENT;
+	new iEnt = NULLENT;
 
-	while((iEntity = rg_find_ent_by_class(iEntity, DEAD_BODY_CLASSNAME)) > 0)
+	while((iEnt = rg_find_ent_by_class(iEnt, DEAD_BODY_CLASSNAME)) > 0)
 	{
-		if(get_entvar(iEntity, var_owner) == id)
+		if(get_entvar(iEnt, var_owner) == id)
 		{
-			return iEntity;
+			return iEnt;
 		}
 	}
 
@@ -148,4 +145,20 @@ stock UTIL_UploadConfigs()
 
 	server_cmd("exec %s", path);
 	server_exec();
+}
+
+/*
+* Get position of the bones of the corpse
+*/
+stock UTIL_GetPositionBonesCorpse(const iEnt, Float:vOrigin[6][3])
+{
+	static const iBonesCorpse[] = {0, 8, 17, 31, 43, 49};
+	new Float:vBoneOrigin[6][3];
+	
+	for(new i; i < sizeof(iBonesCorpse); i++)
+	{
+		engfunc(EngFunc_GetBonePosition, iEnt, iBonesCorpse[i], vBoneOrigin[i]);
+	}
+
+	vOrigin = vBoneOrigin;
 }

@@ -34,7 +34,7 @@ public plugin_init()
 	RegisterHookChain(RG_CSGameRules_CleanUpMap, "CSGameRules_CleanUpMap_Post", .post = 1);
 
 	bind_pcvar_string(create_cvar("rt_access", "", FCVAR_NONE, "Access flags for resurrection/mining"), g_eCvars[ACCESS], charsmax(g_eCvars[ACCESS]));
-	bind_pcvar_num(create_cvar("rt_MAX_REVIVES", "3", FCVAR_NONE, "Maximum number of resurrections per round", true, 1.0), g_eCvars[MAX_REVIVES]);
+	bind_pcvar_num(create_cvar("rt_max_revives", "3", FCVAR_NONE, "Maximum number of resurrections per round", true, 1.0), g_eCvars[MAX_REVIVES]);
 	bind_pcvar_num(create_cvar("rt_max_spawns", "2", FCVAR_NONE, "Maximum number of spawns per player per round", true, 1.0), g_eCvars[MAX_SPAWNS]);
 	bind_pcvar_num(create_cvar("rt_no_fire", "1", FCVAR_NONE, "Block shooting during resurrection/mining", true, 0.0), g_eCvars[NO_FIRE]);
 	bind_pcvar_num(create_cvar("rt_bomb", "1", FCVAR_NONE, "You cannot resurrect/plant if there is a bomb", true, 0.0), g_eCvars[BOMB]);
@@ -68,7 +68,7 @@ public rt_revive_start(const id, const activator, const modes_struct:mode)
 		return PLUGIN_HANDLED;
 	}
 
-	if(g_ePlayerData[activator][REVIVE_COUNT] >= g_eCvars[MAX_REVIVES])
+	if(mode == MODE_REVIVE && g_ePlayerData[activator][REVIVE_COUNT] >= g_eCvars[MAX_REVIVES])
 	{
 		client_print_color(activator, print_team_red, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_REVIVE_COUNT");
 		return PLUGIN_HANDLED;
