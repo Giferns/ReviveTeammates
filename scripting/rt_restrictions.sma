@@ -11,7 +11,8 @@ enum CVARS
 	NO_FIRE,
 	BOMB,
 	DUEL,
-	MIN_ROUND
+	MIN_ROUND,
+	NO_MOVE
 };
 
 new g_eCvars[CVARS];
@@ -23,7 +24,9 @@ enum _:PlayerData
 
 new g_ePlayerData[MAX_PLAYERS + 1][PlayerData];
 
-new g_iAccessFlags;
+new g_iAccessFlags, g_iPreventFlags;
+
+new HookChain:g_pHook_ResetMaxSpeed;
 
 public plugin_init()
 {
@@ -32,6 +35,7 @@ public plugin_init()
 	register_dictionary("rt_library.txt");
 
 	RegisterHookChain(RG_CSGameRules_CleanUpMap, "CSGameRules_CleanUpMap_Post", .post = 1);
+	DisableHookChain(g_pHook_ResetMaxSpeed = RegisterHookChain(RG_CBasePlayer_ResetMaxSpeed, "CBasePlayer_ResetMaxSpeed_Post", .post = 1));
 
 	bind_pcvar_string(create_cvar("rt_access", "", FCVAR_NONE, "Access flags for resurrection/mining"), g_eCvars[ACCESS], charsmax(g_eCvars[ACCESS]));
 	bind_pcvar_num(create_cvar("rt_max_revives", "3", FCVAR_NONE, "Maximum number of resurrections per round", true, 1.0), g_eCvars[MAX_REVIVES]);
@@ -40,18 +44,33 @@ public plugin_init()
 	bind_pcvar_num(create_cvar("rt_bomb", "1", FCVAR_NONE, "You cannot resurrect/plant if there is a bomb", true, 0.0), g_eCvars[BOMB]);
 	bind_pcvar_num(create_cvar("rt_duel", "1", FCVAR_NONE, "You cannot resurrect/plant if there is a bomb", true, 0.0), g_eCvars[DUEL]);
 	bind_pcvar_num(create_cvar("rt_min_round", "1", FCVAR_NONE, "From which round is resurrection/planting available", true, 1.0), g_eCvars[MIN_ROUND]);
+	bind_pcvar_num(create_cvar("rt_no_move", "1", FCVAR_NONE, "Cannot move during resurrection/planting", true, 0.0), g_eCvars[NO_MOVE]);
 
 	g_iAccessFlags = read_flags(g_eCvars[ACCESS]);
+	g_iPreventFlags = (PLAYER_PREVENT_CLIMB|PLAYER_PREVENT_JUMP);
 }
 
 public plugin_cfg()
 {
 	UTIL_UploadConfigs();
+
+	if(g_eCvars[NO_MOVE])
+	{
+		EnableHookChain(g_pHook_ResetMaxSpeed);
+	}
 }
 
 public CSGameRules_CleanUpMap_Post()
 {
 	arrayset(g_ePlayerData[0][_:0], 0, sizeof(g_ePlayerData) * sizeof(g_ePlayerData[]));
+}
+
+public CBasePlayer_ResetMaxSpeed_Post(const iActivator)
+{
+	if(get_entvar(iActivator, var_iuser3) & g_iPreventFlags)
+	{
+		set_entvar(iActivator, var_maxspeed, 1.0);
+	}
 }
 
 public rt_revive_start(const id, const activator, const modes_struct:mode)
@@ -92,9 +111,21 @@ public rt_revive_start(const id, const activator, const modes_struct:mode)
 		return PLUGIN_HANDLED;
 	}
 
-	if(g_eCvars[NO_FIRE])
+	new modes_struct:iMode = get_entvar(id, var_iuser3);
+
+	if(iMode != MODE_PLANT)
 	{
-		set_member(activator, m_bIsDefusing, true);
+		if(g_eCvars[NO_MOVE])
+		{
+			set_entvar(activator, var_iuser3, get_entvar(activator, var_iuser3) | g_iPreventFlags);
+			set_entvar(activator, var_velocity, NULL_VECTOR);
+			rg_reset_maxspeed(activator);
+		}
+
+		if(g_eCvars[NO_FIRE])
+		{
+			set_member(activator, m_bIsDefusing, true);
+		}
 	}
 
 	return PLUGIN_CONTINUE;
@@ -102,6 +133,12 @@ public rt_revive_start(const id, const activator, const modes_struct:mode)
 
 public rt_revive_cancelled(const id, const activator, const modes_struct:mode)
 {
+	if(g_eCvars[NO_MOVE])
+	{
+		set_entvar(activator, var_iuser3, get_entvar(activator, var_iuser3) & ~g_iPreventFlags);
+		rg_reset_maxspeed(activator);
+	}
+
 	if(g_eCvars[NO_FIRE])
 	{
 		set_member(activator, m_bIsDefusing, false);
@@ -113,6 +150,12 @@ public rt_revive_end(const id, const activator, const modes_struct:mode)
 	if(mode == MODE_REVIVE)
 	{
 		g_ePlayerData[activator][REVIVE_COUNT]++;
+	}
+
+	if(g_eCvars[NO_MOVE])
+	{
+		set_entvar(activator, var_iuser3, get_entvar(activator, var_iuser3) & ~g_iPreventFlags);
+		rg_reset_maxspeed(activator);
 	}
 
 	if(g_eCvars[NO_FIRE])

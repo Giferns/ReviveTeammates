@@ -3,7 +3,7 @@
 
 enum CVARS
 {
-	NOTIFY_TYPE
+	NOTIFY_DHUD
 };
 
 new g_eCvars[CVARS];
@@ -16,7 +16,7 @@ public plugin_init()
 
 	register_dictionary("rt_library.txt");
 
-	bind_pcvar_num(create_cvar("rt_notify_type", "1", FCVAR_NONE, "0 - chat, 1 - DHUD", true, 0.0), g_eCvars[NOTIFY_TYPE]);
+	bind_pcvar_num(create_cvar("rt_notify_dhud", "1", FCVAR_NONE, "Notification under Timer(DHUD)", true, 0.0), g_eCvars[NOTIFY_DHUD]);
 }
 
 public plugin_cfg()
@@ -29,30 +29,26 @@ public plugin_cfg()
 public rt_revive_start(const id, const activator, const modes_struct:mode)
 {
 	new modes_struct:iMode = get_entvar(id, var_iuser3);
-	
+
 	if(iMode != MODE_PLANT)
 	{
-		switch(g_eCvars[NOTIFY_TYPE])
+		switch(mode)
 		{
-			case 0:
+			case MODE_REVIVE:
 			{
-				if(mode == MODE_REVIVE)
-				{
-					client_print_color(activator, print_team_blue, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_TIMER_REVIVE", id);
-				}
-				else if(mode == MODE_PLANT)
-				{
-					client_print_color(activator, print_team_blue, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_TIMER_PLANT", id);
-				}
-			}
-			case 1:
-			{
-				if(mode == MODE_REVIVE)
+				client_print_color(activator, print_team_blue, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_TIMER_REVIVE", id);
+			
+				if(g_eCvars[NOTIFY_DHUD])
 				{
 					DisplayDHUDMessage(activator, fmt("%L", activator, "RT_DHUD_REVIVE", id), mode);
 					DisplayDHUDMessage(id, fmt("%L %L", id, "RT_CHAT_TAG", id, "RT_DHUD_REVIVE2", activator), mode);
 				}
-				else if(mode == MODE_PLANT)
+			}
+			case MODE_PLANT:
+			{
+				client_print_color(activator, print_team_blue, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_TIMER_PLANT", id);
+
+				if(g_eCvars[NOTIFY_DHUD])
 				{
 					DisplayDHUDMessage(activator, fmt("%L", activator, "RT_DHUD_PLANTING", id), mode);
 				}
@@ -63,47 +59,45 @@ public rt_revive_start(const id, const activator, const modes_struct:mode)
 
 public rt_revive_cancelled(const id, const activator, const modes_struct:mode)
 {
-	switch(g_eCvars[NOTIFY_TYPE])
+	switch(mode)
 	{
-		case 0:
+		case MODE_REVIVE:
 		{
-			if(mode == MODE_REVIVE)
-			{
-				client_print_color(activator, print_team_blue, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_CANCELLED_REVIVE", id);
-			}
-			else if(mode == MODE_PLANT)
-			{
-				client_print_color(activator, print_team_blue, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_CANCELLED_PLANT", id);
-			}
+			client_print_color(activator, print_team_red, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_CANCELLED_REVIVE", id);
+		
 		}
-		case 1:
+		case MODE_PLANT:
 		{
-			ClearDHUDMessages(activator);
-			ClearDHUDMessages(id);
+			client_print_color(activator, print_team_red, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_CANCELLED_PLANT", id);
 		}
+	}
+
+	if(g_eCvars[NOTIFY_DHUD])
+	{
+		ClearDHUDMessages(activator);
+		ClearDHUDMessages(id);
 	}
 }
 
 public rt_revive_end(const id, const activator, const modes_struct:mode)
 {
-	switch(g_eCvars[NOTIFY_TYPE])
+	switch(mode)
 	{
-		case 0:
+		case MODE_REVIVE:
 		{
-			if(mode == MODE_REVIVE)
-			{
-				client_print_color(activator, print_team_blue, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_REVIVE", id);
-			}
-			else if(mode == MODE_PLANT)
-			{
-				client_print_color(activator, print_team_red, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_PLANTING", id);
-			}
+			client_print_color(activator, print_team_blue, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_REVIVE", id);
+		
 		}
-		case 1:
+		case MODE_PLANT:
 		{
-			ClearDHUDMessages(activator);
-			ClearDHUDMessages(id);
+			client_print_color(activator, print_team_blue, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_PLANTING", id);
 		}
+	}
+
+	if(g_eCvars[NOTIFY_DHUD])
+	{
+		ClearDHUDMessages(activator);
+		ClearDHUDMessages(id);
 	}
 }
 

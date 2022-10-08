@@ -58,7 +58,9 @@ public CSGameRules_CleanUpMap_Post()
 
 public rt_revive_start(const id, const activator, const modes_struct:mode)
 {
-	if(get_entvar(id, var_iuser3) == MODE_PLANT)
+	new modes_struct:iMode = get_entvar(id, var_iuser3);
+
+	if(iMode == MODE_PLANT)
 	{
 		if(g_ePlayerData[activator][PLANTING_COUNT] >= g_eCvars[MAX_PLANTING])
 		{
@@ -66,7 +68,7 @@ public rt_revive_start(const id, const activator, const modes_struct:mode)
 			return PLUGIN_HANDLED;
 		}
 
-		if(get_member(id, m_iTeam) != get_member(activator, m_iTeam))
+		if(mode == MODE_PLANT)
 		{
 			client_print_color(activator, print_team_red, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_IS_PLANTED", id);
 			return PLUGIN_HANDLED;
@@ -76,7 +78,7 @@ public rt_revive_start(const id, const activator, const modes_struct:mode)
 		get_entvar(activator, var_origin, vOrigin);
 		UTIL_MakeExplosionEffects(vOrigin);
 		
-		new iMiner = get_entvar(id, var_iuser4);
+		new iPlanter = get_entvar(id, var_iuser4);
 		
 		for(new iVictim = 1, Float:fReduceDamage, Float:vecEnd[3]; iVictim <= MaxClients; iVictim++)
 		{
@@ -94,10 +96,8 @@ public rt_revive_start(const id, const activator, const modes_struct:mode)
 			
 			set_member(iVictim, m_LastHitGroup, HITGROUP_GENERIC);
 
-			ExecuteHamB(Ham_TakeDamage, iVictim, id, iMiner, fReduceDamage, DMG_GRENADE | DMG_ALWAYSGIB);
+			ExecuteHamB(Ham_TakeDamage, iVictim, id, iPlanter, fReduceDamage, DMG_GRENADE | DMG_ALWAYSGIB);
 		}
-
-		set_entvar(id, var_iuser3, MODE_NONE);
 
 		UTIL_RemoveCorpses(id);
 	}
@@ -109,6 +109,8 @@ public rt_revive_end(const id, const activator, const modes_struct:mode)
 {
 	if(mode == MODE_PLANT)
 	{
+		g_ePlayerData[activator][PLANTING_COUNT]++;
+
 		set_entvar(id, var_iuser3, mode);
 		set_entvar(id, var_iuser4, activator);
 	}

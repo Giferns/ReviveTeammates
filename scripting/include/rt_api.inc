@@ -12,7 +12,7 @@
 #include <hamsandwich>
 #include <reapi>
 
-#define VERSION "0.2.0"
+#define VERSION "0.3.0"
 #define AUTHORS "ufame & Albertio"
 
 enum modes_struct
@@ -161,4 +161,15 @@ stock UTIL_GetPositionBonesCorpse(const iEnt, Float:vOrigin[6][3])
 	}
 
 	vOrigin = vBoneOrigin;
+}
+
+/*
+* Reset entity think
+*/
+stock UTIL_ResetEntityThink(const eForward, const iEnt, const id, const activator, const modes_struct:mode)
+{
+	set_entvar(iEnt, var_iuser1, 0);
+	set_entvar(iEnt, var_nextthink, 0.0);
+
+	ExecuteForward(eForward, _, id, activator, mode);
 }

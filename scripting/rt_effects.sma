@@ -46,31 +46,36 @@ public plugin_cfg()
 
 public rt_revive_start(const id, const activator, const modes_struct:mode)
 {
-	new iEnt = UTIL_GetEntityById(id);
+	new modes_struct:iMode = get_entvar(id, var_iuser3);
 
-	switch(mode)
+	if(iMode != MODE_PLANT)
 	{
-		case MODE_REVIVE:
-		{
-			if(g_eCvars[SPECTATOR])
-			{
-				rg_internal_cmd(id, "specmode", "4");
+		new iEnt = UTIL_GetEntityById(id);
 
-				set_entvar(id, var_iuser2, activator);
-				set_member(id, m_hObserverTarget, activator);
-				set_member(id, m_flNextObserverInput, get_gametime() + 1.6);
-			}
-			
-			if(g_eCvars[REVIVE_GLOW][0] != EOS)
-			{
-				rg_set_rendering(iEnt, kRenderFxGlowShell, g_eGlowColors[REVIVE_COLOR], kRenderNormal, 30.0);
-			}
-		}
-		case MODE_PLANT:
+		switch(mode)
 		{
-			if(g_eCvars[PLANTING_GLOW][0] != EOS)
+			case MODE_REVIVE:
 			{
-				rg_set_rendering(iEnt, kRenderFxGlowShell, g_eGlowColors[PLANTING_COLOR], kRenderNormal, 30.0);
+				if(g_eCvars[SPECTATOR])
+				{
+					rg_internal_cmd(id, "specmode", "4");
+
+					set_entvar(id, var_iuser2, activator);
+					set_member(id, m_hObserverTarget, activator);
+					set_member(id, m_flNextObserverInput, get_gametime() + 1.6);
+				}
+				
+				if(g_eCvars[REVIVE_GLOW][0] != EOS)
+				{
+					rg_set_rendering(iEnt, kRenderFxGlowShell, g_eGlowColors[REVIVE_COLOR], kRenderNormal, 30.0);
+				}
+			}
+			case MODE_PLANT:
+			{
+				if(g_eCvars[PLANTING_GLOW][0] != EOS)
+				{
+					rg_set_rendering(iEnt, kRenderFxGlowShell, g_eGlowColors[PLANTING_COLOR], kRenderNormal, 30.0);
+				}
 			}
 		}
 	}
