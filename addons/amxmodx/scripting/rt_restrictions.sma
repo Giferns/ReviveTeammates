@@ -1,6 +1,7 @@
 #include <amxmodx>
 #include <rt_api>
 
+// to rt_api.inc
 #define m_iCurrentRound (get_member_game(m_iTotalRoundsPlayed) + 1)
 
 enum CVARS
@@ -80,7 +81,7 @@ public CBasePlayer_ResetMaxSpeed_Post(const iActivator)
 
 public rt_revive_start(const id, const activator, const modes_struct:mode)
 {
-	if((get_user_flags(activator) & g_iAccessFlags) != g_iAccessFlags)
+	if (g_iAccessFlags > ADMIN_ALL && ~get_user_flags(activator) & g_iAccessFlags)
 	{
 		client_print_color(activator, print_team_red, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_NO_ACCESS");
 		return PLUGIN_HANDLED;
