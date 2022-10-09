@@ -25,7 +25,7 @@ public plugin_init()
 
 	register_dictionary("rt_library.txt");
 
-	bind_pcvar_num(create_cvar("rt_timer_type", "1", FCVAR_NONE, "0 - HUD, 1 - bartime(strip)", true, 0.0), g_eCvars[TIMER_TYPE]);
+	bind_pcvar_num(create_cvar("rt_timer_type", "1", FCVAR_NONE, "0 - HUD, 1 - bartime(orange line)", true, 0.0), g_eCvars[TIMER_TYPE]);
 	
 	if(g_eCvars[TIMER_TYPE] == 0)
 	{
@@ -42,29 +42,24 @@ public plugin_cfg()
 
 public rt_revive_start(const id, const activator, const modes_struct:mode)
 {
-	new modes_struct:iMode = get_entvar(id, var_iuser3);
-	
-	if(iMode != MODE_PLANT)
+	switch(g_eCvars[TIMER_TYPE])
 	{
-		switch(g_eCvars[TIMER_TYPE])
+		case 0:
 		{
-			case 0:
+			formatex(g_szTimer[id], charsmax(g_szTimer[]), TIMER_BEGIN);
+
+			for(new i; i < floatround(g_fTime); i++)
 			{
-				formatex(g_szTimer[id], charsmax(g_szTimer[]), TIMER_BEGIN);
-
-				for(new i; i < floatround(g_fTime); i++)
-				{
-					add(g_szTimer[id], charsmax(g_szTimer[]), TIMER_ADD);
-				}
-
-				add(g_szTimer[id], charsmax(g_szTimer[]), TIMER_END);
-
-				DisplayHUDMessage(activator, id, mode);
+				add(g_szTimer[id], charsmax(g_szTimer[]), TIMER_ADD);
 			}
-			case 1:
-			{
-				rg_send_bartime(activator, floatround(g_fTime));
-			}
+
+			add(g_szTimer[id], charsmax(g_szTimer[]), TIMER_END);
+
+			DisplayHUDMessage(activator, id, mode);
+		}
+		case 1:
+		{
+			rg_send_bartime(activator, floatround(g_fTime));
 		}
 	}
 }

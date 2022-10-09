@@ -11,9 +11,8 @@
 #include <fakemeta>
 #include <hamsandwich>
 #include <reapi>
-#include <xs>
 
-#define VERSION "0.4.0"
+#define VERSION "0.5.0"
 #define AUTHORS "ufame & Albertio"
 
 enum modes_struct
@@ -26,7 +25,7 @@ enum modes_struct
 new const DEAD_BODY_CLASSNAME[] = "rt_corpse_empty";
 
 /**
-* Called before activator starting the revive (on press USE - `E`)
+* Called after the activator starts resurrection/planting (on press USE - `E`)
 *
 * @param id         player id who can be revived
 * @param activator  player id who can revive
@@ -36,12 +35,12 @@ new const DEAD_BODY_CLASSNAME[] = "rt_corpse_empty";
 forward rt_revive_start(const id, const activator, const modes_struct:mode);
 
 /**
-* Think on revive :: PRE
+* PreThink on resurrection/planting
 *
 * @param id         player id who can be revived
 * @param activator  player id who can revive
 * @param timer      time to revive id
-* @param mode       MODE_REVIVE - the player was resurrected, MODE_PLANT - the player was mined
+* @param mode       MODE_REVIVE - the player continues to be resurrected, MODE_PLANT - the player continues to be planted
 *
 * @note Can stoped by return PLUGIN_HANDLED
 *
@@ -51,12 +50,12 @@ forward rt_revive_start(const id, const activator, const modes_struct:mode);
 forward rt_revive_loop_pre(const id, const activator, const Float:timer, modes_struct:mode);
 
 /**
-* Think on revive :: POST
+* PostThink on resurrection/planting
 *
 * @param id         player id who can be revived
 * @param activator  player id who can revive
 * @param timer      time to revive id
-* @param mode       MODE_REVIVE - the player was resurrected, MODE_PLANT - the player was mined
+* @param mode       MODE_REVIVE - the player continues to be resurrected, MODE_PLANT - the player continues to be planted
 *
 * @note timer can't(!!!) be 0.0
 *
@@ -64,17 +63,17 @@ forward rt_revive_loop_pre(const id, const activator, const Float:timer, modes_s
 forward rt_revive_loop_post(const id, const activator, const Float:timer, modes_struct:mode);
 
 /**
-* Called after revive has been ending
+* Called after the resurrection/planting is ending
 *
 * @param id         player id who can be revived
 * @param activator  player id who can revive
-* @param mode       MODE_REVIVE - the player was resurrected, MODE_PLANT - the player was mined
+* @param mode       MODE_REVIVE - the player was resurrected, MODE_PLANT - the player was planted
 *
 */
 forward rt_revive_end(const id, const activator, const modes_struct:mode);
 
 /**
-* Called when the player has stopped resurrecting
+* Called when the player has stopped resurrecting/planting
 *
 * @param id         player id who can be revived
 * @param activator  player id who can revive

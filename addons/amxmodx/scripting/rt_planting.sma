@@ -43,7 +43,7 @@ public plugin_init()
 
 	bind_pcvar_float(create_cvar("rt_explosion_damage", "255.0", FCVAR_NONE, "Explosion damage", true, 1.0), g_eCvars[DAMAGE]);
 	bind_pcvar_float(create_cvar("rt_explosion_radius", "200.0", FCVAR_NONE, "Explosion radius", true, 1.0), g_eCvars[RADIUS]);
-	bind_pcvar_num(create_cvar("rt_max_planting", "3", FCVAR_NONE, "Maximum number of mining corpses per round", true, 1.0), g_eCvars[MAX_PLANTING]);
+	bind_pcvar_num(create_cvar("rt_max_planting", "3", FCVAR_NONE, "Maximum number of planting corpses per round", true, 1.0), g_eCvars[MAX_PLANTING]);
 }
 
 public plugin_cfg()
@@ -56,11 +56,17 @@ public CSGameRules_CleanUpMap_Post()
 	arrayset(g_ePlayerData[0][_:0], 0, sizeof(g_ePlayerData) * sizeof(g_ePlayerData[]));
 }
 
+public client_disconnected(id)
+{
+	g_ePlayerData[id][PLANTING_COUNT] = 0;
+}
+
 public rt_revive_start(const id, const activator, const modes_struct:mode)
 {
-	new modes_struct:iMode = get_entvar(id, var_iuser3);
-
-	if(iMode == MODE_PLANT)
+	new iEnt = UTIL_GetEntityById(id);
+	new modes_struct:iMode = get_entvar(iEnt, var_iuser3);
+	
+	if(mode == MODE_PLANT)
 	{
 		if(g_ePlayerData[activator][PLANTING_COUNT] >= g_eCvars[MAX_PLANTING])
 		{
@@ -68,38 +74,11 @@ public rt_revive_start(const id, const activator, const modes_struct:mode)
 			return PLUGIN_HANDLED;
 		}
 
-		if(mode == MODE_PLANT)
+		if(iMode == MODE_PLANT)
 		{
 			client_print_color(activator, print_team_red, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_IS_PLANTED", id);
 			return PLUGIN_HANDLED;
 		}
-
-		new Float:vOrigin[3];
-		get_entvar(activator, var_origin, vOrigin);
-		UTIL_MakeExplosionEffects(vOrigin);
-		
-		new iPlanter = get_entvar(id, var_iuser4);
-		
-		for(new iVictim = 1, Float:fReduceDamage, Float:vecEnd[3]; iVictim <= MaxClients; iVictim++)
-		{
-			if(!is_user_alive(iVictim) || get_member(iVictim, m_iTeam) != get_member(id, m_iTeam))
-			{
-				continue;
-			}
-			
-			get_entvar(iVictim, var_origin, vecEnd);
-
-			if((fReduceDamage = (g_eCvars[DAMAGE] - vector_distance(vOrigin, vecEnd) * (g_eCvars[DAMAGE] / g_eCvars[RADIUS]))) < 1.0)
-			{
-				continue;
-			}
-			
-			set_member(iVictim, m_LastHitGroup, HITGROUP_GENERIC);
-
-			ExecuteHamB(Ham_TakeDamage, iVictim, id, iPlanter, fReduceDamage, DMG_GRENADE | DMG_ALWAYSGIB);
-		}
-
-		UTIL_RemoveCorpses(id);
 	}
 
 	return PLUGIN_CONTINUE;
@@ -107,12 +86,54 @@ public rt_revive_start(const id, const activator, const modes_struct:mode)
 
 public rt_revive_end(const id, const activator, const modes_struct:mode)
 {
-	if(mode == MODE_PLANT)
+	new iEnt = UTIL_GetEntityById(id);
+	
+	switch(mode)
 	{
-		g_ePlayerData[activator][PLANTING_COUNT]++;
+		case MODE_REVIVE:
+		{
+			new modes_struct:iMode = get_entvar(iEnt, var_iuser3);
 
-		set_entvar(id, var_iuser3, mode);
-		set_entvar(id, var_iuser4, activator);
+			if(iMode == MODE_PLANT)
+			{
+				new Float:vOrigin[3];
+				get_entvar(activator, var_origin, vOrigin);
+				UTIL_MakeExplosionEffects(vOrigin);
+				
+				new iPlanter = get_entvar(iEnt, var_iuser4);
+				
+				for(new iVictim = 1, Float:fReduceDamage, Float:vecEnd[3]; iVictim <= MaxClients; iVictim++)
+				{
+					if(!is_user_alive(iVictim) || get_member(iVictim, m_iTeam) != get_member(id, m_iTeam))
+					{
+						continue;
+					}
+					
+					get_entvar(iVictim, var_origin, vecEnd);
+
+					if((fReduceDamage = (g_eCvars[DAMAGE] - vector_distance(vOrigin, vecEnd) * (g_eCvars[DAMAGE] / g_eCvars[RADIUS]))) < 1.0)
+					{
+						continue;
+					}
+					
+					set_member(iVictim, m_LastHitGroup, HITGROUP_GENERIC);
+
+					ExecuteHamB(Ham_TakeDamage, iVictim, id, iPlanter, fReduceDamage, DMG_GRENADE | DMG_ALWAYSGIB);
+				}
+
+				UTIL_RemoveCorpses(id);
+			}
+		}
+		case MODE_PLANT:
+		{
+			client_print_color(activator, print_team_blue, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_PLANTING", id);
+			
+			g_ePlayerData[activator][PLANTING_COUNT]++;
+
+			set_entvar(iEnt, var_iuser1, 0);
+			set_entvar(iEnt, var_iuser3, mode);
+			set_entvar(iEnt, var_iuser4, activator);
+		}
 	}
 }
 

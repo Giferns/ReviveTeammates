@@ -4,6 +4,7 @@
 enum CVARS
 {
 	SPECTATOR,
+	NOTIFY_DHUD,
 	REVIVE_GLOW[32],
 	PLANTING_GLOW[32]
 };
@@ -18,6 +19,8 @@ enum GlowColors
 
 new Float:g_eGlowColors[GlowColors][3];
 
+new Float:g_fTime;
+
 public plugin_init()
 {
 	register_plugin("Revive Teammates: Effects", VERSION, AUTHORS);
@@ -25,6 +28,7 @@ public plugin_init()
 	register_dictionary("rt_library.txt");
 	
 	bind_pcvar_num(create_cvar("rt_spectator", "1", FCVAR_NONE, "Automatically observe the resurrecting player", true, 0.0), g_eCvars[SPECTATOR]);
+	bind_pcvar_num(create_cvar("rt_notify_dhud", "1", FCVAR_NONE, "Notification under Timer(DHUD)", true, 0.0), g_eCvars[NOTIFY_DHUD]);
 	bind_pcvar_string(create_cvar("rt_revive_glow", "#5da130", FCVAR_NONE, "The color of the corpse being resurrected(HEX)"), g_eCvars[REVIVE_GLOW], charsmax(g_eCvars[REVIVE_GLOW]));
 	bind_pcvar_string(create_cvar("rt_planting_glow", "#9b2d30", FCVAR_NONE, "The color of the corpse being planted(HEX)"), g_eCvars[PLANTING_GLOW], charsmax(g_eCvars[PLANTING_GLOW]));
 	
@@ -42,40 +46,47 @@ public plugin_init()
 public plugin_cfg()
 {
 	UTIL_UploadConfigs();
+
+	g_fTime = get_pcvar_float(get_cvar_pointer("rt_revive_time"));
 }
 
 public rt_revive_start(const id, const activator, const modes_struct:mode)
 {
-	new modes_struct:iMode = get_entvar(id, var_iuser3);
+	new iEnt = UTIL_GetEntityById(id);
 
-	if(iMode != MODE_PLANT)
+	switch(mode)
 	{
-		new iEnt = UTIL_GetEntityById(id);
-
-		switch(mode)
+		case MODE_REVIVE:
 		{
-			case MODE_REVIVE:
+			if(g_eCvars[SPECTATOR])
 			{
-				if(g_eCvars[SPECTATOR])
-				{
-					rg_internal_cmd(id, "specmode", "4");
-
-					set_entvar(id, var_iuser2, activator);
-					set_member(id, m_hObserverTarget, activator);
-					set_member(id, m_flNextObserverInput, get_gametime() + 1.6);
-				}
-				
-				if(g_eCvars[REVIVE_GLOW][0] != EOS)
-				{
-					rg_set_rendering(iEnt, kRenderFxGlowShell, g_eGlowColors[REVIVE_COLOR], kRenderNormal, 30.0);
-				}
+				rg_internal_cmd(id, "specmode", "4");
+				set_entvar(id, var_iuser2, activator);
+				set_member(id, m_hObserverTarget, activator);
+				set_member(id, m_flNextObserverInput, get_gametime() + 1.6);
 			}
-			case MODE_PLANT:
+
+			if(g_eCvars[NOTIFY_DHUD])
 			{
-				if(g_eCvars[PLANTING_GLOW][0] != EOS)
-				{
-					rg_set_rendering(iEnt, kRenderFxGlowShell, g_eGlowColors[PLANTING_COLOR], kRenderNormal, 30.0);
-				}
+				DisplayDHUDMessage(activator, fmt("%L", activator, "RT_DHUD_REVIVE", id), mode);
+				DisplayDHUDMessage(id, fmt("%L %L", id, "RT_CHAT_TAG", id, "RT_DHUD_REVIVE2", activator), mode);
+			}
+			
+			if(g_eCvars[REVIVE_GLOW][0] != EOS)
+			{
+				rg_set_rendering(iEnt, kRenderFxGlowShell, g_eGlowColors[REVIVE_COLOR], kRenderNormal, 30.0);
+			}
+		}
+		case MODE_PLANT:
+		{
+			if(g_eCvars[NOTIFY_DHUD])
+			{
+				DisplayDHUDMessage(activator, fmt("%L", activator, "RT_DHUD_PLANTING", id), mode);
+			}
+			
+			if(g_eCvars[PLANTING_GLOW][0] != EOS)
+			{
+				rg_set_rendering(iEnt, kRenderFxGlowShell, g_eGlowColors[PLANTING_COLOR], kRenderNormal, 30.0);
 			}
 		}
 	}
@@ -84,6 +95,12 @@ public rt_revive_start(const id, const activator, const modes_struct:mode)
 public rt_revive_cancelled(const id, const activator, const modes_struct:mode)
 {
 	new iEnt = UTIL_GetEntityById(id);
+
+	if(g_eCvars[NOTIFY_DHUD])
+	{
+		ClearDHUDMessages(activator);
+		ClearDHUDMessages(id);
+	}
 
 	if((g_eCvars[REVIVE_GLOW][0] != EOS) || (g_eCvars[PLANTING_GLOW][0] != EOS))
 	{
@@ -94,6 +111,12 @@ public rt_revive_cancelled(const id, const activator, const modes_struct:mode)
 public rt_revive_end(const id, const activator, const modes_struct:mode)
 {
 	new iEnt = UTIL_GetEntityById(id);
+
+	if(g_eCvars[NOTIFY_DHUD])
+	{
+		ClearDHUDMessages(activator);
+		ClearDHUDMessages(id);
+	}
 
 	if(mode == MODE_PLANT && ((g_eCvars[REVIVE_GLOW][0] != EOS) || (g_eCvars[PLANTING_GLOW][0] != EOS)))
 	{
@@ -149,4 +172,29 @@ stock parseHex(const ch)
 	}
 
 	return 0;
+}
+
+stock DisplayDHUDMessage(id, szMessage[], modes_struct:mode)
+{
+	switch(mode)
+	{
+		case MODE_REVIVE:
+		{
+			set_dhudmessage(0, 255, 0, -1.0, 0.81, .holdtime = g_fTime);
+		}
+		case MODE_PLANT:
+		{
+			set_dhudmessage(255, 0, 0, -1.0, 0.81, .holdtime = g_fTime);
+		}
+	}
+
+	show_dhudmessage(id, szMessage);
+}
+
+stock ClearDHUDMessages(id, iClear = 8)
+{
+	for(new i; i < iClear; i++)
+	{
+		show_dhudmessage(id, "");
+	}
 }

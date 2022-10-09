@@ -1,6 +1,7 @@
 [en]
 RT_CHAT_TAG = ^4[RT]
 RT_ANTI_FLOOD = ^3Wait before the next resurrection/planting
+RT_CHANGE_TEAM = ^3The player changed the team
 RT_ACTIVATOR_EXISTS = ^3The player is already being resurrected/planting
 RT_DISCONNECTED = ^3The player is disconnected from the server or alive
 RT_REVIVE = ^3You have resurrected the player ^4%n
@@ -24,6 +25,7 @@ RT_DHUD_PLANTING = YOU'RE PLANTING %n
 [ru]
 RT_CHAT_TAG = ^4[RT]
 RT_ANTI_FLOOD = ^3Подождите перед следующим воскрешением/минированием
+RT_CHANGE_TEAM = ^3Игрок изменил команду
 RT_ACTIVATOR_EXISTS = ^3Игрока уже воскрешают/минируют
 RT_DISCONNECTED = ^3Игрок отключился от сервера или живой
 RT_REVIVE = ^3Вы воскресили игрока ^4%n

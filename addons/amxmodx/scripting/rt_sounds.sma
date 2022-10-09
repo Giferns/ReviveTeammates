@@ -60,25 +60,20 @@ public plugin_cfg()
 
 public rt_revive_start(const id, const activator, const modes_struct:mode)
 {
-	new modes_struct:iMode = get_entvar(id, var_iuser3);
-
-	if(iMode != MODE_PLANT)
+	switch(mode)
 	{
-		switch(mode)
+		case MODE_REVIVE:
 		{
-			case MODE_REVIVE:
+			if(g_iSounds[SECTION_REVIVE_START])
 			{
-				if(g_iSounds[SECTION_REVIVE_START])
-				{
-					rg_send_audio(activator, g_szSounds[SECTION_REVIVE_START][random(g_iSounds[SECTION_REVIVE_START])]);
-				}
+				rg_send_audio(activator, g_szSounds[SECTION_REVIVE_START][random(g_iSounds[SECTION_REVIVE_START])]);
 			}
-			case MODE_PLANT:
+		}
+		case MODE_PLANT:
+		{
+			if(g_iSounds[SECTION_PLANT_START])
 			{
-				if(g_iSounds[SECTION_PLANT_START])
-				{
-					rg_send_audio(activator, g_szSounds[SECTION_PLANT_START][random(g_iSounds[SECTION_PLANT_START])]);
-				}
+				rg_send_audio(activator, g_szSounds[SECTION_PLANT_START][random(g_iSounds[SECTION_PLANT_START])]);
 			}
 		}
 	}

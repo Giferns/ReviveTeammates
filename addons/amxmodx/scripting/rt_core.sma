@@ -39,9 +39,9 @@ public plugin_init()
 	bind_pcvar_float(create_cvar("rt_revive_time", "3.0", FCVAR_NONE, "Duration of the player's resurrection(in seconds)", true, 1.0), g_eCvars[REVIVE_TIME]);
 	bind_pcvar_float(create_cvar("rt_revive_antiflood", "3.0", FCVAR_NONE, "Duration of anti-flood resurrection(in seconds)", true, 1.0), g_eCvars[ANTIFLOOD_TIME]);
 	
-	g_eForwards[ReviveStart] = CreateMultiForward("rt_revive_start", ET_CONTINUE, FP_CELL, FP_CELL, FP_CELL);
-	g_eForwards[ReviveLoop_Pre] = CreateMultiForward("rt_revive_loop_pre", ET_CONTINUE, FP_CELL, FP_CELL, FP_CELL, FP_CELL);
-	g_eForwards[ReviveLoop_Post] = CreateMultiForward("rt_revive_loop_post", ET_IGNORE, FP_CELL, FP_CELL, FP_CELL, FP_CELL);
+	g_eForwards[ReviveStart] = CreateMultiForward("rt_revive_start", ET_STOP, FP_CELL, FP_CELL, FP_CELL);
+	g_eForwards[ReviveLoop_Pre] = CreateMultiForward("rt_revive_loop_pre", ET_STOP, FP_CELL, FP_CELL, FP_FLOAT, FP_CELL);
+	g_eForwards[ReviveLoop_Post] = CreateMultiForward("rt_revive_loop_post", ET_IGNORE, FP_CELL, FP_CELL, FP_FLOAT, FP_CELL);
 	g_eForwards[ReviveEnd] = CreateMultiForward("rt_revive_end", ET_IGNORE, FP_CELL, FP_CELL, FP_CELL);
 	g_eForwards[ReviveCancelled] = CreateMultiForward("rt_revive_cancelled", ET_IGNORE, FP_CELL, FP_CELL, FP_CELL);
 
@@ -71,7 +71,7 @@ public CBasePlayer_UseEmpty_Pre(const iActivator)
 
 	while((iEnt = rg_find_ent_by_class(iEnt, DEAD_BODY_CLASSNAME)) > 0)
 	{
-		if(UTIL_GetNearestBoneCorpse(iEnt, iActivator))
+		if(get_entvar(iActivator, var_flags) & FL_ONGROUND && UTIL_GetNearestBoneCorpse(iEnt, iActivator))
 		{
 			Corpse_Use(iEnt, iActivator);
 
@@ -107,17 +107,6 @@ public Corpse_Use(const iEnt, const iActivator)
 		return;
 	}
 
-	new Float:flGameTime = get_gametime();
-
-	if(g_flLastUse[iActivator] > flGameTime)
-	{
-		client_print_color(iActivator, print_team_red, "%L %L", iActivator, "RT_CHAT_TAG", iActivator, "RT_ANTI_FLOOD");
-
-		return;
-	}
-
-	g_flLastUse[iActivator] = flGameTime + g_eCvars[ANTIFLOOD_TIME];
-
 	if(get_entvar(iEnt, var_iuser1))
 	{
 		client_print_color(iActivator, print_team_red, "%L %L", iActivator, "RT_CHAT_TAG", iActivator, "RT_ACTIVATOR_EXISTS");
@@ -134,6 +123,42 @@ public Corpse_Use(const iEnt, const iActivator)
 		UTIL_ResetEntityThink(g_eForwards[ReviveCancelled], iEnt, iPlayer, iActivator, eCurrentMode)
 
 		return;
+	}
+
+	new Float:flGameTime = get_gametime();
+
+	if(g_flLastUse[iActivator] > flGameTime)
+	{
+		client_print_color(iActivator, print_team_red, "%L %L", iActivator, "RT_CHAT_TAG", iActivator, "RT_ANTI_FLOOD");
+
+		UTIL_ResetEntityThink(g_eForwards[ReviveCancelled], iEnt, iPlayer, iActivator, eCurrentMode)
+
+		return;
+	}
+
+	g_flLastUse[iActivator] = flGameTime + g_eCvars[ANTIFLOOD_TIME];
+
+	new TeamName:iEntTeam = get_entvar(iEnt, var_team);
+
+	if(iEntTeam != iPlTeam)
+	{
+		client_print_color(iActivator, print_team_red, "%L %L", iActivator, "RT_CHAT_TAG", iActivator, "RT_CHANGE_TEAM");
+
+		UTIL_ResetEntityThink(g_eForwards[ReviveCancelled], iEnt, iPlayer, iActivator, eCurrentMode)
+
+		return;
+	}
+
+	switch(eCurrentMode)
+	{
+		case MODE_REVIVE:
+		{
+			client_print_color(iActivator, print_team_blue, "%L %L", iActivator, "RT_CHAT_TAG", iActivator, "RT_TIMER_REVIVE", iPlayer);
+		}
+		case MODE_PLANT:
+		{
+			client_print_color(iActivator, print_team_blue, "%L %L", iActivator, "RT_CHAT_TAG", iActivator, "RT_TIMER_PLANT", iPlayer);
+		}
 	}
 
 	g_iTimeUntil[iActivator] = 0;
@@ -173,6 +198,18 @@ public Corpse_Think(const iEnt)
 
 	if(~get_entvar(iActivator, var_button) & IN_USE || !is_user_alive(iActivator))
 	{
+		switch(eCurrentMode)
+		{
+			case MODE_REVIVE:
+			{
+				client_print_color(iActivator, print_team_red, "%L %L", iActivator, "RT_CHAT_TAG", iActivator, "RT_CANCELLED_REVIVE", iPlayer);
+			}
+			case MODE_PLANT:
+			{
+				client_print_color(iActivator, print_team_red, "%L %L", iActivator, "RT_CHAT_TAG", iActivator, "RT_CANCELLED_PLANT", iPlayer);
+			}
+		}
+		
 		UTIL_ResetEntityThink(g_eForwards[ReviveCancelled], iEnt, iPlayer, iActivator, eCurrentMode)
 
 		return;
@@ -200,8 +237,12 @@ public Corpse_Think(const iEnt)
 	
 	if(get_gametime() > flTimeUntil[0])
 	{
-		if(iActTeam == iPlTeam)
+		new modes_struct:iMode = get_entvar(iEnt, var_iuser3);
+
+		if(eCurrentMode == MODE_REVIVE && iMode != MODE_PLANT)
 		{
+			client_print_color(iActivator, print_team_blue, "%L %L", iActivator, "RT_CHAT_TAG", iActivator, "RT_REVIVE", iPlayer);
+
 			rg_round_respawn(iPlayer);
 
 			new Float:fOrigin[3];
@@ -212,10 +253,6 @@ public Corpse_Think(const iEnt)
 			engfunc(EngFunc_SetOrigin, iPlayer, fOrigin);
 			
 			UTIL_RemoveCorpses(iPlayer);
-		}
-		else
-		{
-			set_entvar(iEnt, var_iuser1, 0);
 		}
 
 		ExecuteForward(g_eForwards[ReviveEnd], _, iPlayer, iActivator, eCurrentMode);
@@ -267,6 +304,7 @@ public MessageHook_ClCorpse()
 	set_entvar(iEnt, var_frame, 255.0);
 	set_entvar(iEnt, var_skin, get_entvar(iPlayer, var_skin));
 	set_entvar(iEnt, var_owner, iPlayer);
+	set_entvar(iEnt, var_team, TeamName:get_member(iPlayer, m_iTeam));
 
 	new Float:fOrigin[3];
 	get_entvar(iPlayer, var_origin, fOrigin);
