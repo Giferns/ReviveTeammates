@@ -1,4 +1,8 @@
 <h1 align="center">Revive Teammates Modular</h1>
+<p align="center">
+  <a href="https://t.me/revive_teammates">
+  <img src="https://img.shields.io/badge/discussions-on%20Telegram%20group-informational?style=flat-square&logo=googlechat" alt="Telegram">
+</p>
 
 ## Usage
 
