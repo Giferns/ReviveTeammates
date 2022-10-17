@@ -4,7 +4,8 @@
 enum CVARS
 {
 	Float:REVIVE_TIME,
-	Float:ANTIFLOOD_TIME
+	Float:ANTIFLOOD_TIME,
+	Float:CORPSE_TIME
 };
 
 new g_eCvars[CVARS];
@@ -20,10 +21,11 @@ enum Forwards
 
 new g_eForwards[Forwards];
 
+const Float:MAX_PLAYER_USE_RADIUS = 64.0;
+
 new g_iPluginLoaded;
 
-new Float:g_flLastUse[MAX_PLAYERS + 1];
-new g_iTimeUntil[MAX_PLAYERS + 1];
+new Float:g_flLastUse[MAX_PLAYERS + 1], g_iTimeUntil[MAX_PLAYERS + 1];
 
 public plugin_init()
 {
@@ -36,8 +38,7 @@ public plugin_init()
 	RegisterHookChain(RG_CSGameRules_CleanUpMap, "CSGameRules_CleanUpMap_Post", .post = 1);
 	RegisterHookChain(RG_CBasePlayer_UseEmpty, "CBasePlayer_UseEmpty_Pre", .post = 0);
 
-	bind_pcvar_float(create_cvar("rt_revive_time", "3.0", FCVAR_NONE, "Duration of the player's resurrection(in seconds)", true, 1.0), g_eCvars[REVIVE_TIME]);
-	bind_pcvar_float(create_cvar("rt_revive_antiflood", "3.0", FCVAR_NONE, "Duration of anti-flood resurrection(in seconds)", true, 1.0), g_eCvars[ANTIFLOOD_TIME]);
+	RegisterCvars();
 	
 	g_eForwards[ReviveStart] = CreateMultiForward("rt_revive_start", ET_STOP, FP_CELL, FP_CELL, FP_CELL);
 	g_eForwards[ReviveLoop_Pre] = CreateMultiForward("rt_revive_loop_pre", ET_STOP, FP_CELL, FP_CELL, FP_FLOAT, FP_CELL);
@@ -51,6 +52,15 @@ public plugin_init()
 public plugin_cfg()
 {
 	UTIL_UploadConfigs();
+}
+
+public plugin_end()
+{
+	DestroyForward(g_eForwards[ReviveStart]);
+	DestroyForward(g_eForwards[ReviveLoop_Pre]);
+	DestroyForward(g_eForwards[ReviveLoop_Post]);
+	DestroyForward(g_eForwards[ReviveEnd]);
+	DestroyForward(g_eForwards[ReviveCancelled]);
 }
 
 public client_disconnected(id)
@@ -67,15 +77,46 @@ public CSGameRules_CleanUpMap_Post()
 
 public CBasePlayer_UseEmpty_Pre(const iActivator)
 {
-	new iEnt = NULLENT;
+	if(~get_entvar(iActivator, var_flags) & FL_ONGROUND)
+	{
+		return;
+	}
+
+	new Float:vPlOrigin[3], Float:vPlViewOfs[3], Float:vPlAngle[3], Float:vBoneOrigin[3];
+
+	get_entvar(iActivator, var_origin, vPlOrigin);
+	get_entvar(iActivator, var_view_ofs, vPlViewOfs);
+	get_entvar(iActivator, var_v_angle, vPlAngle);
+	
+	engfunc(EngFunc_MakeVectors, vPlAngle);
+	global_get(glb_v_forward, vPlAngle);
+	
+	for(new i; i < 3; i++)
+	{
+		vPlOrigin[i] += vPlViewOfs[i];
+		vPlAngle[i] = vPlAngle[i] * MAX_PLAYER_USE_RADIUS * 2.0 + vPlOrigin[i];
+	}
+
+	new iEnt = NULLENT, pHit;
 
 	while((iEnt = rg_find_ent_by_class(iEnt, DEAD_BODY_CLASSNAME)) > 0)
 	{
-		if(get_entvar(iActivator, var_flags) & FL_ONGROUND && UTIL_GetNearestBoneCorpse(iEnt, iActivator))
+		for(new iBone = 1; iBone <= 54; iBone++)
 		{
-			Corpse_Use(iEnt, iActivator);
+			engfunc(EngFunc_GetBonePosition, iEnt, iBone, vBoneOrigin);
+	
+			if(vector_distance(vPlOrigin, vBoneOrigin) < MAX_PLAYER_USE_RADIUS)
+			{
+				engfunc(EngFunc_TraceModel, vPlOrigin, vPlAngle, HULL_POINT, iEnt, 0);
+				pHit = get_tr2(0, TR_pHit);
+						
+				if(pHit == iEnt && !is_nullent(pHit))
+				{
+					Corpse_Use(iEnt, iActivator);
 
-			return;
+					return;
+				}
+			}
 		}
 	}
 }
@@ -120,7 +161,7 @@ public Corpse_Use(const iEnt, const iActivator)
 
 	if(fwRet == PLUGIN_HANDLED)
 	{
-		UTIL_ResetEntityThink(g_eForwards[ReviveCancelled], iEnt, iPlayer, iActivator, eCurrentMode)
+		UTIL_ResetEntityThink(g_eForwards[ReviveCancelled], iEnt, iPlayer, iActivator, eCurrentMode);
 
 		return;
 	}
@@ -131,7 +172,7 @@ public Corpse_Use(const iEnt, const iActivator)
 	{
 		client_print_color(iActivator, print_team_red, "%L %L", iActivator, "RT_CHAT_TAG", iActivator, "RT_ANTI_FLOOD");
 
-		UTIL_ResetEntityThink(g_eForwards[ReviveCancelled], iEnt, iPlayer, iActivator, eCurrentMode)
+		UTIL_ResetEntityThink(g_eForwards[ReviveCancelled], iEnt, iPlayer, iActivator, eCurrentMode);
 
 		return;
 	}
@@ -144,7 +185,7 @@ public Corpse_Use(const iEnt, const iActivator)
 	{
 		client_print_color(iActivator, print_team_red, "%L %L", iActivator, "RT_CHAT_TAG", iActivator, "RT_CHANGE_TEAM");
 
-		UTIL_ResetEntityThink(g_eForwards[ReviveCancelled], iEnt, iPlayer, iActivator, eCurrentMode)
+		UTIL_ResetEntityThink(g_eForwards[ReviveCancelled], iEnt, iPlayer, iActivator, eCurrentMode);
 
 		return;
 	}
@@ -180,9 +221,11 @@ public Corpse_Think(const iEnt)
 	new TeamName:iActTeam = get_member(iActivator, m_iTeam), TeamName:iPlTeam = get_member(iPlayer, m_iTeam);
 	new modes_struct:eCurrentMode = (iActTeam == iPlTeam) ? MODE_REVIVE : MODE_PLANT;
 
-	if(!iActivator)
+	new Float:flGameTime = get_gametime();
+	
+	if(!iActivator && get_entvar(iEnt, var_fuser4) < flGameTime)
 	{
-		UTIL_ResetEntityThink(g_eForwards[ReviveCancelled], iEnt, iPlayer, iActivator, eCurrentMode)
+		UTIL_RemoveCorpses(iPlayer);
 
 		return;
 	}
@@ -191,7 +234,7 @@ public Corpse_Think(const iEnt)
 	{
 		client_print_color(iActivator, print_team_red, "%L %L", iActivator, "RT_CHAT_TAG", iActivator, "RT_DISCONNECTED");
 
-		UTIL_ResetEntityThink(g_eForwards[ReviveCancelled], iEnt, iPlayer, iActivator, eCurrentMode)
+		UTIL_ResetEntityThink(g_eForwards[ReviveCancelled], iEnt, iPlayer, iActivator, eCurrentMode);
 
 		return;
 	}
@@ -210,7 +253,7 @@ public Corpse_Think(const iEnt)
 			}
 		}
 		
-		UTIL_ResetEntityThink(g_eForwards[ReviveCancelled], iEnt, iPlayer, iActivator, eCurrentMode)
+		UTIL_ResetEntityThink(g_eForwards[ReviveCancelled], iEnt, iPlayer, iActivator, eCurrentMode);
 
 		return;
 	}
@@ -229,19 +272,20 @@ public Corpse_Think(const iEnt)
 
 		if(fwRet == PLUGIN_HANDLED)
 		{
-			UTIL_ResetEntityThink(g_eForwards[ReviveCancelled], iEnt, iPlayer, iActivator, eCurrentMode)
+			UTIL_ResetEntityThink(g_eForwards[ReviveCancelled], iEnt, iPlayer, iActivator, eCurrentMode);
 			
 			return;
 		}
 	}
 	
-	if(get_gametime() > flTimeUntil[0])
+	if(flGameTime > flTimeUntil[0])
 	{
 		new modes_struct:iMode = get_entvar(iEnt, var_iuser3);
 
 		if(eCurrentMode == MODE_REVIVE && iMode != MODE_PLANT)
 		{
 			client_print_color(iActivator, print_team_blue, "%L %L", iActivator, "RT_CHAT_TAG", iActivator, "RT_REVIVE", iPlayer);
+			client_print_color(iPlayer, print_team_blue, "%L %L", iPlayer, "RT_CHAT_TAG", iPlayer, "RT_REVIVED", iActivator);
 
 			rg_round_respawn(iPlayer);
 
@@ -269,20 +313,21 @@ public Corpse_Think(const iEnt)
 	}
 	
 	set_entvar(iEnt, var_fuser3, flTimeUntil[1]);
-	set_entvar(iEnt, var_nextthink, get_gametime() + 0.1);
+	set_entvar(iEnt, var_nextthink, flGameTime + 0.1);
 }
 
 public MessageHook_ClCorpse()
 {
 	enum
 	{
+		arg_model = 1,
 		arg_body = 10,
 		arg_id = 12
 	};
 
 	new iPlayer = get_msg_arg_int(arg_id);
 
-	if(!is_user_connected(iPlayer) || is_user_alive(iPlayer))
+	if(!is_user_connected(iPlayer) || is_user_alive(iPlayer) || TeamName:get_member(iPlayer, m_iTeam) == TEAM_SPECTATOR)
 	{
 		return PLUGIN_HANDLED;
 	}
@@ -294,9 +339,11 @@ public MessageHook_ClCorpse()
 		return PLUGIN_CONTINUE;
 	}
 
-	new szModel[MAX_RESOURCE_PATH_LENGTH];
-	engfunc(EngFunc_InfoKeyValue, engfunc(EngFunc_GetInfoKeyBuffer, iPlayer), "model", szModel, charsmax(szModel));
-	engfunc(EngFunc_SetModel, iEnt, fmt("models/player/%s/%s.mdl", szModel, szModel));
+	new szTemp[MAX_RESOURCE_PATH_LENGTH], szModel[MAX_RESOURCE_PATH_LENGTH];
+	get_msg_arg_string(arg_model, szTemp, charsmax(szTemp));
+	formatex(szModel, charsmax(szModel), "models/player/%s/%s.mdl", szTemp, szTemp);
+
+	engfunc(EngFunc_SetModel, iEnt, szModel);
 
 	set_entvar(iEnt, var_classname, DEAD_BODY_CLASSNAME);
 	set_entvar(iEnt, var_body, get_msg_arg_int(arg_body));
@@ -316,5 +363,38 @@ public MessageHook_ClCorpse()
 
 	SetThink(iEnt, "Corpse_Think");
 
+	set_entvar(iEnt, var_fuser4, get_gametime() + g_eCvars[CORPSE_TIME]);
+
 	return PLUGIN_HANDLED;
+}
+
+public RegisterCvars()
+{
+	bind_pcvar_float(create_cvar(
+		"rt_revive_time",
+		"3.0",
+		FCVAR_NONE,
+		"Duration of the player's resurrection(in seconds)",
+		true,
+		1.0),
+		g_eCvars[REVIVE_TIME]
+	);
+	bind_pcvar_float(create_cvar(
+		"rt_revive_antiflood",
+		"3.0",
+		FCVAR_NONE,
+		"Duration of anti-flood resurrection(in seconds)",
+		true,
+		1.0),
+		g_eCvars[ANTIFLOOD_TIME]
+	);
+	bind_pcvar_float(create_cvar(
+		"rt_corpse_time",
+		"30.0",
+		FCVAR_NONE,
+		"Duration of the corpse's life(in seconds)",
+		true,
+		10.0),
+		g_eCvars[CORPSE_TIME]
+	);
 }

@@ -49,8 +49,7 @@ public plugin_precache()
 
 public plugin_init()
 {
-	bind_pcvar_float(create_cvar("rt_sound_radius", "250.0", FCVAR_NONE, "The radius in which to count the nearest players", true, 1.0), g_eCvars[SOUND_RADIUS]);
-	bind_pcvar_num(create_cvar("rt_nearby_players", "1", FCVAR_NONE, "Playback of the resurrection/planting end sound for nearby players", true, 0.0), g_eCvars[NEARBY_PLAYERS]);
+	RegisterCvars();
 }
 
 public plugin_cfg()
@@ -106,7 +105,9 @@ public rt_revive_end(const id, const activator, const modes_struct:mode)
 	{
 		case MODE_REVIVE:
 		{
-			if(g_iSounds[SECTION_REVIVE_END])
+			new modes_struct:iMode = get_entvar(UTIL_GetEntityById(id), var_iuser3);
+			
+			if(iMode != MODE_PLANT && g_iSounds[SECTION_REVIVE_END])
 			{
 				if(g_eCvars[NEARBY_PLAYERS])
 				{
@@ -204,4 +205,26 @@ stock PlaybackSoundNearbyPlayers(const id, szSound[])
 			rg_send_audio(iPlayer, szSound);
 		}
 	}
+}
+
+public RegisterCvars()
+{
+	bind_pcvar_float(create_cvar(
+		"rt_sound_radius",
+		"250.0",
+		FCVAR_NONE,
+		"The radius in which to count the nearest players",
+		true,
+		1.0),
+		g_eCvars[SOUND_RADIUS]
+	);
+	bind_pcvar_num(create_cvar(
+		"rt_nearby_players",
+		"1",
+		FCVAR_NONE,
+		"Playback of the resurrection/planting end sound for nearby players",
+		true,
+		0.0),
+		g_eCvars[NEARBY_PLAYERS]
+	);
 }

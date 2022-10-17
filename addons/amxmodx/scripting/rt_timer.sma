@@ -8,6 +8,15 @@ enum CVARS
 
 new g_eCvars[CVARS];
 
+enum TimeData
+{
+	Float:GLOBAL_TIME,
+	CEIL_TIME,
+	START_TIME,
+};
+
+new g_eTimeData[TimeData];
+
 new const TIMER_BEGIN[]			= "[ | ";
 new const TIMER_ADD[]			= "- ";
 new const TIMER_END[]			= "]";
@@ -17,7 +26,6 @@ new const TIMER_REPLACE_WITH[]	= "| |";
 new g_iHudSyncObj;
 
 new g_szTimer[MAX_PLAYERS + 1][64];
-new Float:g_fTime;
 
 public plugin_init()
 {
@@ -25,7 +33,7 @@ public plugin_init()
 
 	register_dictionary("rt_library.txt");
 
-	bind_pcvar_num(create_cvar("rt_timer_type", "1", FCVAR_NONE, "0 - HUD, 1 - bartime(orange line)", true, 0.0), g_eCvars[TIMER_TYPE]);
+	RegisterCvars();
 	
 	if(g_eCvars[TIMER_TYPE] == 0)
 	{
@@ -37,7 +45,9 @@ public plugin_cfg()
 {
 	UTIL_UploadConfigs();
 
-	g_fTime = get_pcvar_float(get_cvar_pointer("rt_revive_time"));
+	g_eTimeData[GLOBAL_TIME] = get_pcvar_float(get_cvar_pointer("rt_revive_time"));
+	g_eTimeData[CEIL_TIME] = floatround(g_eTimeData[GLOBAL_TIME], floatround_ceil);
+	g_eTimeData[START_TIME] = floatround((1.0 - g_eTimeData[GLOBAL_TIME] / g_eTimeData[CEIL_TIME]) * 100);
 }
 
 public rt_revive_start(const id, const activator, const modes_struct:mode)
@@ -48,7 +58,7 @@ public rt_revive_start(const id, const activator, const modes_struct:mode)
 		{
 			formatex(g_szTimer[id], charsmax(g_szTimer[]), TIMER_BEGIN);
 
-			for(new i; i < floatround(g_fTime); i++)
+			for(new i; i < floatround(g_eTimeData[GLOBAL_TIME]); i++)
 			{
 				add(g_szTimer[id], charsmax(g_szTimer[]), TIMER_ADD);
 			}
@@ -59,7 +69,7 @@ public rt_revive_start(const id, const activator, const modes_struct:mode)
 		}
 		case 1:
 		{
-			rg_send_bartime(activator, floatround(g_fTime));
+			rg_send_bartime2(activator, g_eTimeData[CEIL_TIME], g_eTimeData[START_TIME]);
 		}
 	}
 }
@@ -95,13 +105,26 @@ stock DisplayHUDMessage(id, dead, const modes_struct:mode)
 	{
 		case MODE_REVIVE:
 		{
-			set_hudmessage(0, 255, 0, -1.0, 0.61, .holdtime = g_fTime);
+			set_hudmessage(0, 255, 0, -1.0, 0.61, .holdtime = g_eTimeData[GLOBAL_TIME]);
 		}
 		case MODE_PLANT:
 		{
-			set_hudmessage(255, 0, 0, -1.0, 0.61, .holdtime = g_fTime);
+			set_hudmessage(255, 0, 0, -1.0, 0.61, .holdtime = g_eTimeData[GLOBAL_TIME]);
 		}
 	}
 	
 	ShowSyncHudMsg(id, g_iHudSyncObj, g_szTimer[dead]);
+}
+
+public RegisterCvars()
+{
+	bind_pcvar_num(create_cvar(
+		"rt_timer_type",
+		"1",
+		FCVAR_NONE,
+		"0 - HUD, 1 - bartime(orange line)",
+		true,
+		0.0),
+		g_eCvars[TIMER_TYPE]
+	);
 }

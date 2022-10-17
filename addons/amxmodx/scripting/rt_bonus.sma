@@ -7,6 +7,7 @@ enum CVARS
 {
 	WEAPONS[256],
 	Float:HEALTH,
+	WEAPONS_MAPS,
 	ARMOR_TYPE,
 	ARMOR,
 	FRAGS
@@ -23,11 +24,12 @@ public plugin_init()
 	
 	register_dictionary("rt_library.txt");
 
-	bind_pcvar_string(create_cvar("rt_weapons", "weapon_knife weapon_deagle", FCVAR_NONE, "What weapons should be given to the player after resurrection(no more than 6)(otherwise standard from game.cfg)"), g_eCvars[WEAPONS], charsmax(g_eCvars[WEAPONS]));
-	bind_pcvar_float(create_cvar("rt_health", "100.0", FCVAR_NONE, "The number of health of the resurrected player", true, 1.0), g_eCvars[HEALTH]);
-	bind_pcvar_num(create_cvar("rt_armor_type", "2", FCVAR_NONE, "0 - do not issue armor, 1 - bulletproof vest, 2 - bulletproof vest with helmet", true, 0.0), g_eCvars[ARMOR_TYPE]);
-	bind_pcvar_num(create_cvar("rt_armor", "100", FCVAR_NONE, "Number of armor of the resurrected player", true, 1.0), g_eCvars[ARMOR]);
-	bind_pcvar_num(create_cvar("rt_frags", "1", FCVAR_NONE, "Number of frags for resurrection", true, 1.0), g_eCvars[FRAGS]);
+	RegisterCvars();
+}
+
+public plugin_cfg()
+{
+	UTIL_UploadConfigs();
 
 	if(g_eCvars[WEAPONS][0] != EOS)
 	{
@@ -43,16 +45,21 @@ public plugin_init()
 			copy(g_szWeapon[g_iWeapons++], charsmax(g_szWeapon[]), szWeapon);
 		}
 	}
-}
 
-public plugin_cfg()
-{
-	UTIL_UploadConfigs();
+	new szMapName[32];
+	get_mapname(szMapName, charsmax(szMapName));
+	
+	if(g_eCvars[WEAPONS_MAPS] && containi(szMapName, "awp_"))
+	{
+		g_szWeapon[0][0] = EOS;
+	}
 }
 
 public rt_revive_end(const id, const activator, const modes_struct:mode)
 {
-	if(mode == MODE_REVIVE)
+	new modes_struct:iMode = get_entvar(UTIL_GetEntityById(id), var_iuser3);
+
+	if(iMode != MODE_PLANT && mode == MODE_REVIVE)
 	{
 		if(g_eCvars[HEALTH])
 		{
@@ -83,4 +90,61 @@ public rt_revive_end(const id, const activator, const modes_struct:mode)
 			ExecuteHamB(Ham_AddPoints, activator, g_eCvars[FRAGS], false);
 		}
 	}
+}
+
+public RegisterCvars()
+{
+	bind_pcvar_string(create_cvar(
+		"rt_weapons",
+		"weapon_knife weapon_deagle",
+		FCVAR_NONE,
+		"What weapons should be given to the player after resurrection(no more than 6)(otherwise standard from game.cfg)"),
+		g_eCvars[WEAPONS],
+		charsmax(g_eCvars[WEAPONS])
+	);
+	bind_pcvar_float(create_cvar(
+		"rt_health",
+		"100.0",
+		FCVAR_NONE,
+		"The number of health of the resurrected player",
+		true,
+		1.0),
+		g_eCvars[HEALTH]
+	);
+	bind_pcvar_num(create_cvar(
+		"rt_weapons_maps",
+		"1",
+		FCVAR_NONE,
+		"Issue weapons on awp maps",
+		true,
+		0.0),
+		g_eCvars[WEAPONS_MAPS]
+	);
+	bind_pcvar_num(create_cvar(
+		"rt_armor_type",
+		"2",
+		FCVAR_NONE,
+		"0 - do not issue armor, 1 - bulletproof vest, 2 - bulletproof vest with helmet",
+		true,
+		0.0),
+		g_eCvars[ARMOR_TYPE]
+	);
+	bind_pcvar_num(create_cvar(
+		"rt_armor",
+		"100",
+		FCVAR_NONE,
+		"Number of armor of the resurrected player",
+		true,
+		1.0),
+		g_eCvars[ARMOR]
+	);
+	bind_pcvar_num(create_cvar(
+		"rt_frags",
+		"1",
+		FCVAR_NONE,
+		"Number of frags for resurrection",
+		true,
+		1.0),
+		g_eCvars[FRAGS]
+	);
 }

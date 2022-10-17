@@ -12,7 +12,7 @@
 #include <hamsandwich>
 #include <reapi>
 
-#define VERSION "0.5.0"
+#define VERSION "0.6.0"
 #define AUTHORS "ufame & Albertio"
 
 enum modes_struct
@@ -96,15 +96,9 @@ stock UTIL_RemoveCorpses(const id = 0)
 			continue;
 		}
 		
-		SetThink(iEnt, NULL_STRING);
-
-		RequestFrame("DeleteEntity", iEnt);
+		set_entvar(iEnt, var_flags, FL_KILLME);
+		set_entvar(iEnt, var_nextthink, -1.0);
 	}
-}
-
-public DeleteEntity(iEnt)
-{
-	engfunc(EngFunc_RemoveEntity, iEnt);
 }
 
 /*
@@ -145,28 +139,6 @@ stock UTIL_UploadConfigs()
 
 	server_cmd("exec %s", path);
 	server_exec();
-}
-
-/*
-* Get the nearest bone of the corpses
-*/
-stock UTIL_GetNearestBoneCorpse(const iEnt, const activator)
-{
-	new Float:vPlOrigin[3], Float:vBoneOrigin[3];
-
-	get_entvar(activator, var_origin, vPlOrigin);
-
-	for(new iBone = 1; iBone <= 54; iBone++)
-	{
-		engfunc(EngFunc_GetBonePosition, iEnt, iBone, vBoneOrigin);
- 
-		if(is_in_viewcone(activator, vBoneOrigin) && get_distance_f(vPlOrigin, vBoneOrigin) <= 64.0)
-		{
-			return iBone;
-		}
-	}
- 
-	return 0;
 }
 
 /*

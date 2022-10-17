@@ -27,11 +27,13 @@ public plugin_init()
 
 	register_dictionary("rt_library.txt");
 	
-	bind_pcvar_num(create_cvar("rt_spectator", "1", FCVAR_NONE, "Automatically observe the resurrecting player", true, 0.0), g_eCvars[SPECTATOR]);
-	bind_pcvar_num(create_cvar("rt_notify_dhud", "1", FCVAR_NONE, "Notification under Timer(DHUD)", true, 0.0), g_eCvars[NOTIFY_DHUD]);
-	bind_pcvar_string(create_cvar("rt_revive_glow", "#5da130", FCVAR_NONE, "The color of the corpse being resurrected(HEX)"), g_eCvars[REVIVE_GLOW], charsmax(g_eCvars[REVIVE_GLOW]));
-	bind_pcvar_string(create_cvar("rt_planting_glow", "#9b2d30", FCVAR_NONE, "The color of the corpse being planted(HEX)"), g_eCvars[PLANTING_GLOW], charsmax(g_eCvars[PLANTING_GLOW]));
-	
+	RegisterCvars();
+}
+
+public plugin_cfg()
+{
+	UTIL_UploadConfigs();
+
 	if(g_eCvars[REVIVE_GLOW][0] != EOS)
 	{
 		g_eGlowColors[REVIVE_COLOR] = parseHEXColor(g_eCvars[REVIVE_GLOW]);
@@ -41,11 +43,6 @@ public plugin_init()
 	{
 		g_eGlowColors[PLANTING_COLOR] = parseHEXColor(g_eCvars[PLANTING_GLOW]);
 	}
-}
-
-public plugin_cfg()
-{
-	UTIL_UploadConfigs();
 
 	g_fTime = get_pcvar_float(get_cvar_pointer("rt_revive_time"));
 }
@@ -96,15 +93,28 @@ public rt_revive_cancelled(const id, const activator, const modes_struct:mode)
 {
 	new iEnt = UTIL_GetEntityById(id);
 
+	switch(mode)
+	{
+		case MODE_REVIVE:
+		{
+			if(g_eCvars[REVIVE_GLOW][0] != EOS)
+			{
+				rg_set_rendering(iEnt);
+			}
+		}
+		case MODE_PLANT:
+		{
+			if(g_eCvars[PLANTING_GLOW][0] != EOS)
+			{
+				rg_set_rendering(iEnt);
+			}
+		}
+	}
+
 	if(g_eCvars[NOTIFY_DHUD])
 	{
 		ClearDHUDMessages(activator);
 		ClearDHUDMessages(id);
-	}
-
-	if((g_eCvars[REVIVE_GLOW][0] != EOS) || (g_eCvars[PLANTING_GLOW][0] != EOS))
-	{
-		rg_set_rendering(iEnt);
 	}
 }
 
@@ -112,16 +122,31 @@ public rt_revive_end(const id, const activator, const modes_struct:mode)
 {
 	new iEnt = UTIL_GetEntityById(id);
 
+	switch(mode)
+	{
+		case MODE_REVIVE:
+		{
+			new modes_struct:iMode = get_entvar(iEnt, var_iuser3);
+			
+			if(iMode != MODE_PLANT && g_eCvars[REVIVE_GLOW][0] != EOS)
+			{
+				rg_set_rendering(iEnt);
+			}
+		}
+		case MODE_PLANT:
+		{
+			if(g_eCvars[PLANTING_GLOW][0] != EOS)
+			{
+				rg_set_rendering(iEnt);
+			}
+		}
+	}
+
 	if(g_eCvars[NOTIFY_DHUD])
 	{
 		ClearDHUDMessages(activator);
 		ClearDHUDMessages(id);
 	}
-
-	if(mode == MODE_PLANT && ((g_eCvars[REVIVE_GLOW][0] != EOS) || (g_eCvars[PLANTING_GLOW][0] != EOS)))
-	{
-		rg_set_rendering(iEnt);
-	}	
 }
 
 stock rg_set_rendering(const id, const fx = kRenderFxNone, const Float:fColor[3] = {0.0, 0.0, 0.0}, const render = kRenderNormal, const Float:fAmount = 0.0)
@@ -197,4 +222,42 @@ stock ClearDHUDMessages(id, iClear = 8)
 	{
 		show_dhudmessage(id, "");
 	}
+}
+
+public RegisterCvars()
+{
+	bind_pcvar_num(create_cvar(
+		"rt_spectator",
+		"1",
+		FCVAR_NONE,
+		"Automatically observe the resurrecting player",
+		true,
+		0.0),
+		g_eCvars[SPECTATOR]
+	);
+	bind_pcvar_num(create_cvar(
+		"rt_notify_dhud",
+		"1",
+		FCVAR_NONE,
+		"Notification under Timer(DHUD)",
+		true,
+		0.0),
+		g_eCvars[NOTIFY_DHUD]
+	);
+	bind_pcvar_string(create_cvar(
+		"rt_revive_glow",
+		"#5da130",
+		FCVAR_NONE,
+		"The color of the corpse being resurrected(HEX)"),
+		g_eCvars[REVIVE_GLOW],
+		charsmax(g_eCvars[REVIVE_GLOW])
+	);
+	bind_pcvar_string(create_cvar(
+		"rt_planting_glow",
+		"#9b2d30",
+		FCVAR_NONE,
+		"The color of the corpse being planted(HEX)"),
+		g_eCvars[PLANTING_GLOW],
+		charsmax(g_eCvars[PLANTING_GLOW])
+	);
 }

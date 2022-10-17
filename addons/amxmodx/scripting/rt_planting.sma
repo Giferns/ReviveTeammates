@@ -41,9 +41,7 @@ public plugin_init()
 
 	RegisterHookChain(RG_CSGameRules_CleanUpMap, "CSGameRules_CleanUpMap_Post", .post = 1);
 
-	bind_pcvar_float(create_cvar("rt_explosion_damage", "255.0", FCVAR_NONE, "Explosion damage", true, 1.0), g_eCvars[DAMAGE]);
-	bind_pcvar_float(create_cvar("rt_explosion_radius", "200.0", FCVAR_NONE, "Explosion radius", true, 1.0), g_eCvars[RADIUS]);
-	bind_pcvar_num(create_cvar("rt_max_planting", "3", FCVAR_NONE, "Maximum number of planting corpses per round", true, 1.0), g_eCvars[MAX_PLANTING]);
+	RegisterCvars();
 }
 
 public plugin_cfg()
@@ -63,8 +61,7 @@ public client_disconnected(id)
 
 public rt_revive_start(const id, const activator, const modes_struct:mode)
 {
-	new iEnt = UTIL_GetEntityById(id);
-	new modes_struct:iMode = get_entvar(iEnt, var_iuser3);
+	new modes_struct:iMode = get_entvar(UTIL_GetEntityById(id), var_iuser3);
 	
 	if(mode == MODE_PLANT)
 	{
@@ -118,7 +115,7 @@ public rt_revive_end(const id, const activator, const modes_struct:mode)
 					
 					set_member(iVictim, m_LastHitGroup, HITGROUP_GENERIC);
 
-					ExecuteHamB(Ham_TakeDamage, iVictim, id, iPlanter, fReduceDamage, DMG_GRENADE | DMG_ALWAYSGIB);
+					ExecuteHamB(Ham_TakeDamage, iVictim, iEnt, iPlanter, fReduceDamage, DMG_GRENADE | DMG_ALWAYSGIB);
 				}
 
 				UTIL_RemoveCorpses(id);
@@ -200,4 +197,35 @@ stock UTIL_MakeExplosionEffects(const Float:vecOrigin[3])
 	write_byte(30);
 	write_byte(17);
 	message_end();
+}
+
+public RegisterCvars()
+{
+	bind_pcvar_float(create_cvar(
+		"rt_explosion_damage",
+		"255.0",
+		FCVAR_NONE,
+		"Explosion damage",
+		true,
+		1.0),
+		g_eCvars[DAMAGE]
+	);
+	bind_pcvar_float(create_cvar(
+		"rt_explosion_radius",
+		"200.0",
+		FCVAR_NONE,
+		"Explosion radius",
+		true,
+		1.0),
+		g_eCvars[RADIUS]
+	);
+	bind_pcvar_num(create_cvar(
+		"rt_max_planting",
+		"3",
+		FCVAR_NONE,
+		"Maximum number of planting corpses per round",
+		true,
+		1.0),
+		g_eCvars[MAX_PLANTING]
+	);
 }
