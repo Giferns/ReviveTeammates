@@ -50,7 +50,7 @@ public plugin_cfg()
 	g_eTimeData[START_TIME] = floatround((1.0 - g_eTimeData[GLOBAL_TIME] / g_eTimeData[CEIL_TIME]) * 100);
 }
 
-public rt_revive_start(const id, const activator, const modes_struct:mode)
+public rt_revive_start(const iEnt, const id, const activator, const modes_struct:mode)
 {
 	switch(g_eCvars[TIMER_TYPE])
 	{
@@ -74,7 +74,15 @@ public rt_revive_start(const id, const activator, const modes_struct:mode)
 	}
 }
 
-public rt_revive_loop_post(const id, const activator, const Float:timer, modes_struct:mode)
+public rt_revive_loop_pre(const iEnt, const id, const activator, const Float:timer, modes_struct:mode)
+{
+	if(g_eCvars[TIMER_TYPE] == 1)
+	{
+		rg_send_bartime2(id, g_eTimeData[CEIL_TIME], floatround((1.0 - timer / g_eTimeData[CEIL_TIME]) * 100));
+	}
+}
+
+public rt_revive_loop_post(const iEnt, const id, const activator, const Float:timer, modes_struct:mode)
 {
 	if(g_eCvars[TIMER_TYPE] == 0)
 	{
@@ -84,7 +92,7 @@ public rt_revive_loop_post(const id, const activator, const Float:timer, modes_s
 	}
 }
 
-public rt_revive_cancelled(const id, const activator, const modes_struct:mode)
+public rt_revive_cancelled(const iEnt, const id, const activator, const modes_struct:mode)
 {
 	switch(g_eCvars[TIMER_TYPE])
 	{

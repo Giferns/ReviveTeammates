@@ -21,8 +21,6 @@ enum Forwards
 
 new g_eForwards[Forwards];
 
-const Float:MAX_PLAYER_USE_RADIUS = 64.0;
-
 new g_iPluginLoaded;
 
 new Float:g_flLastUse[MAX_PLAYERS + 1], g_iTimeUntil[MAX_PLAYERS + 1];
@@ -40,11 +38,11 @@ public plugin_init()
 
 	RegisterCvars();
 	
-	g_eForwards[ReviveStart] = CreateMultiForward("rt_revive_start", ET_STOP, FP_CELL, FP_CELL, FP_CELL);
-	g_eForwards[ReviveLoop_Pre] = CreateMultiForward("rt_revive_loop_pre", ET_STOP, FP_CELL, FP_CELL, FP_FLOAT, FP_CELL);
-	g_eForwards[ReviveLoop_Post] = CreateMultiForward("rt_revive_loop_post", ET_IGNORE, FP_CELL, FP_CELL, FP_FLOAT, FP_CELL);
-	g_eForwards[ReviveEnd] = CreateMultiForward("rt_revive_end", ET_IGNORE, FP_CELL, FP_CELL, FP_CELL);
-	g_eForwards[ReviveCancelled] = CreateMultiForward("rt_revive_cancelled", ET_IGNORE, FP_CELL, FP_CELL, FP_CELL);
+	g_eForwards[ReviveStart] = CreateMultiForward("rt_revive_start", ET_STOP, FP_CELL, FP_CELL, FP_CELL, FP_CELL);
+	g_eForwards[ReviveLoop_Pre] = CreateMultiForward("rt_revive_loop_pre", ET_STOP, FP_CELL, FP_CELL, FP_CELL, FP_FLOAT, FP_CELL);
+	g_eForwards[ReviveLoop_Post] = CreateMultiForward("rt_revive_loop_post", ET_IGNORE, FP_CELL, FP_CELL, FP_CELL, FP_FLOAT, FP_CELL);
+	g_eForwards[ReviveEnd] = CreateMultiForward("rt_revive_end", ET_IGNORE, FP_CELL, FP_CELL, FP_CELL, FP_CELL);
+	g_eForwards[ReviveCancelled] = CreateMultiForward("rt_revive_cancelled", ET_IGNORE, FP_CELL, FP_CELL, FP_CELL, FP_CELL);
 
 	g_iPluginLoaded = is_plugin_loaded("rt_planting.amxx", true);
 }
@@ -82,7 +80,7 @@ public CBasePlayer_UseEmpty_Pre(const iActivator)
 		return;
 	}
 
-	new Float:vPlOrigin[3], Float:vPlViewOfs[3], Float:vPlAngle[3], Float:vBoneOrigin[3];
+	new Float:vPlOrigin[3], Float:vPlViewOfs[3], Float:vPlAngle[3];
 
 	get_entvar(iActivator, var_origin, vPlOrigin);
 	get_entvar(iActivator, var_view_ofs, vPlViewOfs);
@@ -99,23 +97,21 @@ public CBasePlayer_UseEmpty_Pre(const iActivator)
 
 	new iEnt = NULLENT, pHit;
 
+	engfunc(EngFunc_TraceLine, vPlOrigin, vPlAngle, DONT_IGNORE_MONSTERS, iActivator, 0);
+	get_tr2(0, TR_vecEndPos, vPlAngle);
+
 	while((iEnt = rg_find_ent_by_class(iEnt, DEAD_BODY_CLASSNAME)) > 0)
 	{
-		for(new iBone = 1; iBone <= 54; iBone++)
+		if(UTIL_GetNearestBoneCorpse(iEnt, iActivator))
 		{
-			engfunc(EngFunc_GetBonePosition, iEnt, iBone, vBoneOrigin);
-	
-			if(vector_distance(vPlOrigin, vBoneOrigin) < MAX_PLAYER_USE_RADIUS)
-			{
-				engfunc(EngFunc_TraceModel, vPlOrigin, vPlAngle, HULL_POINT, iEnt, 0);
-				pHit = get_tr2(0, TR_pHit);
+			engfunc(EngFunc_TraceModel, vPlOrigin, vPlAngle, HULL_POINT, iEnt, 0);
+			pHit = get_tr2(0, TR_pHit);
 						
-				if(pHit == iEnt && !is_nullent(pHit))
-				{
-					Corpse_Use(iEnt, iActivator);
+			if(pHit == iEnt && !is_nullent(pHit))
+			{
+				Corpse_Use(iEnt, iActivator);
 
-					return;
-				}
+				return;
 			}
 		}
 	}
@@ -157,7 +153,7 @@ public Corpse_Use(const iEnt, const iActivator)
 
 	new fwRet;
 
-	ExecuteForward(g_eForwards[ReviveStart], fwRet, iPlayer, iActivator, eCurrentMode);
+	ExecuteForward(g_eForwards[ReviveStart], fwRet, iEnt, iPlayer, iActivator, eCurrentMode);
 
 	if(fwRet == PLUGIN_HANDLED)
 	{
@@ -223,7 +219,7 @@ public Corpse_Think(const iEnt)
 
 	new Float:flGameTime = get_gametime();
 	
-	if(!iActivator && get_entvar(iEnt, var_fuser4) < flGameTime)
+	if(g_eCvars[CORPSE_TIME] && !iActivator && get_entvar(iEnt, var_fuser4) < flGameTime)
 	{
 		UTIL_RemoveCorpses(iPlayer);
 
@@ -268,7 +264,7 @@ public Corpse_Think(const iEnt)
 	{
 		new fwRet;
 
-		ExecuteForward(g_eForwards[ReviveLoop_Pre], fwRet, iPlayer, iActivator, flTimeUntil[1], eCurrentMode);
+		ExecuteForward(g_eForwards[ReviveLoop_Pre], fwRet, iEnt, iPlayer, iActivator, flTimeUntil[1], eCurrentMode);
 
 		if(fwRet == PLUGIN_HANDLED)
 		{
@@ -299,14 +295,14 @@ public Corpse_Think(const iEnt)
 			UTIL_RemoveCorpses(iPlayer);
 		}
 
-		ExecuteForward(g_eForwards[ReviveEnd], _, iPlayer, iActivator, eCurrentMode);
+		ExecuteForward(g_eForwards[ReviveEnd], _, iEnt, iPlayer, iActivator, eCurrentMode);
 
 		return;
 	}
 	
 	if(g_iTimeUntil[iActivator] == 10)
 	{
-		ExecuteForward(g_eForwards[ReviveLoop_Post], _, iPlayer, iActivator, flTimeUntil[1], eCurrentMode);
+		ExecuteForward(g_eForwards[ReviveLoop_Post], _, iEnt, iPlayer, iActivator, flTimeUntil[1], eCurrentMode);
 
 		flTimeUntil[1] -= 1.0;
 		g_iTimeUntil[iActivator] = 0;
@@ -363,7 +359,10 @@ public MessageHook_ClCorpse()
 
 	SetThink(iEnt, "Corpse_Think");
 
-	set_entvar(iEnt, var_fuser4, get_gametime() + g_eCvars[CORPSE_TIME]);
+	if(g_eCvars[CORPSE_TIME])
+	{
+		set_entvar(iEnt, var_fuser4, get_gametime() + g_eCvars[CORPSE_TIME]);
+	}
 
 	return PLUGIN_HANDLED;
 }
@@ -392,9 +391,9 @@ public RegisterCvars()
 		"rt_corpse_time",
 		"30.0",
 		FCVAR_NONE,
-		"Duration of the corpse's life(in seconds)",
+		"Duration of a corpse's life (in seconds). If you set it to 0, the corpse lives until the end of the round.",
 		true,
-		10.0),
+		0.0),
 		g_eCvars[CORPSE_TIME]
 	);
 }

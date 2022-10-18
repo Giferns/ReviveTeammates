@@ -6,8 +6,8 @@
 enum CVARS
 {
 	WEAPONS[256],
+	WEAPONS_MAPS[256],
 	Float:HEALTH,
-	WEAPONS_MAPS,
 	ARMOR_TYPE,
 	ARMOR,
 	FRAGS
@@ -31,6 +31,26 @@ public plugin_cfg()
 {
 	UTIL_UploadConfigs();
 
+	new szMapName[32];
+	get_mapname(szMapName, charsmax(szMapName));
+	
+	if(g_eCvars[WEAPONS_MAPS] && containi(szMapName, "awp_") != -1)
+	{
+		new szWeapon[32];
+				
+		while(argbreak(g_eCvars[WEAPONS_MAPS], szWeapon, charsmax(szWeapon), g_eCvars[WEAPONS_MAPS], charsmax(g_eCvars[WEAPONS_MAPS])) != -1)
+		{
+			if(g_iWeapons == MAX_SPAWN_WEAPONS)
+			{
+				break;
+			}
+
+			copy(g_szWeapon[g_iWeapons++], charsmax(g_szWeapon[]), szWeapon);
+		}
+
+		return;
+	}
+
 	if(g_eCvars[WEAPONS][0] != EOS)
 	{
 		new szWeapon[32];
@@ -45,19 +65,11 @@ public plugin_cfg()
 			copy(g_szWeapon[g_iWeapons++], charsmax(g_szWeapon[]), szWeapon);
 		}
 	}
-
-	new szMapName[32];
-	get_mapname(szMapName, charsmax(szMapName));
-	
-	if(g_eCvars[WEAPONS_MAPS] && containi(szMapName, "awp_"))
-	{
-		g_szWeapon[0][0] = EOS;
-	}
 }
 
-public rt_revive_end(const id, const activator, const modes_struct:mode)
+public rt_revive_end(const iEnt, const id, const activator, const modes_struct:mode)
 {
-	new modes_struct:iMode = get_entvar(UTIL_GetEntityById(id), var_iuser3);
+	new modes_struct:iMode = get_entvar(iEnt, var_iuser3);
 
 	if(iMode != MODE_PLANT && mode == MODE_REVIVE)
 	{
@@ -102,6 +114,14 @@ public RegisterCvars()
 		g_eCvars[WEAPONS],
 		charsmax(g_eCvars[WEAPONS])
 	);
+	bind_pcvar_string(create_cvar(
+		"rt_weapons_maps",
+		"weapon_knife weapon_awp",
+		FCVAR_NONE,
+		"What weapons should be given to the player after resurrection on 'awp_' maps(no more than 6)(otherwise standard from game.cfg)"),
+		g_eCvars[WEAPONS_MAPS],
+		charsmax(g_eCvars[WEAPONS_MAPS])
+	);
 	bind_pcvar_float(create_cvar(
 		"rt_health",
 		"100.0",
@@ -110,15 +130,6 @@ public RegisterCvars()
 		true,
 		1.0),
 		g_eCvars[HEALTH]
-	);
-	bind_pcvar_num(create_cvar(
-		"rt_weapons_maps",
-		"1",
-		FCVAR_NONE,
-		"Issue weapons on awp maps",
-		true,
-		0.0),
-		g_eCvars[WEAPONS_MAPS]
 	);
 	bind_pcvar_num(create_cvar(
 		"rt_armor_type",

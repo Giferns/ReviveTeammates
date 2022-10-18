@@ -59,9 +59,9 @@ public client_disconnected(id)
 	g_ePlayerData[id][PLANTING_COUNT] = 0;
 }
 
-public rt_revive_start(const id, const activator, const modes_struct:mode)
+public rt_revive_start(const iEnt, const id, const activator, const modes_struct:mode)
 {
-	new modes_struct:iMode = get_entvar(UTIL_GetEntityById(id), var_iuser3);
+	new modes_struct:iMode = get_entvar(iEnt, var_iuser3);
 	
 	if(mode == MODE_PLANT)
 	{
@@ -81,10 +81,8 @@ public rt_revive_start(const id, const activator, const modes_struct:mode)
 	return PLUGIN_CONTINUE;
 }
 
-public rt_revive_end(const id, const activator, const modes_struct:mode)
+public rt_revive_end(const iEnt, const id, const activator, const modes_struct:mode)
 {
-	new iEnt = UTIL_GetEntityById(id);
-	
 	switch(mode)
 	{
 		case MODE_REVIVE:

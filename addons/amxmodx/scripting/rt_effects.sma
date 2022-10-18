@@ -47,10 +47,8 @@ public plugin_cfg()
 	g_fTime = get_pcvar_float(get_cvar_pointer("rt_revive_time"));
 }
 
-public rt_revive_start(const id, const activator, const modes_struct:mode)
+public rt_revive_start(const iEnt, const id, const activator, const modes_struct:mode)
 {
-	new iEnt = UTIL_GetEntityById(id);
-
 	switch(mode)
 	{
 		case MODE_REVIVE:
@@ -89,10 +87,8 @@ public rt_revive_start(const id, const activator, const modes_struct:mode)
 	}
 }
 
-public rt_revive_cancelled(const id, const activator, const modes_struct:mode)
+public rt_revive_cancelled(const iEnt, const id, const activator, const modes_struct:mode)
 {
-	new iEnt = UTIL_GetEntityById(id);
-
 	switch(mode)
 	{
 		case MODE_REVIVE:
@@ -118,10 +114,8 @@ public rt_revive_cancelled(const id, const activator, const modes_struct:mode)
 	}
 }
 
-public rt_revive_end(const id, const activator, const modes_struct:mode)
+public rt_revive_end(const iEnt, const id, const activator, const modes_struct:mode)
 {
-	new iEnt = UTIL_GetEntityById(id);
-
 	switch(mode)
 	{
 		case MODE_REVIVE:

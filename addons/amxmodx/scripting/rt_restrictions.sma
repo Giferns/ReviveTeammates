@@ -49,7 +49,7 @@ public plugin_cfg()
 
 	g_iAccessFlags = read_flags(g_eCvars[ACCESS]);
 
-	if(g_eCvars[NO_MOVE])
+	if(g_eCvars[NO_MOVE] == 1)
 	{
 		EnableHookChain(g_pHook_ResetMaxSpeed);
 	}
@@ -73,7 +73,7 @@ public CBasePlayer_ResetMaxSpeed_Post(const iActivator)
 	}
 }
 
-public rt_revive_start(const id, const activator, const modes_struct:mode)
+public rt_revive_start(const iEnt, const id, const activator, const modes_struct:mode)
 {
 	if((get_user_flags(activator) & g_iAccessFlags) != g_iAccessFlags)
 	{
@@ -117,7 +117,7 @@ public rt_revive_start(const id, const activator, const modes_struct:mode)
 		return PLUGIN_HANDLED;
 	}
 
-	if(g_eCvars[NO_MOVE])
+	if(g_eCvars[NO_MOVE] == 1)
 	{
 		set_entvar(activator, var_iuser3, get_entvar(activator, var_iuser3) | g_iPreventFlags);
 		set_entvar(activator, var_velocity, NULL_VECTOR);
@@ -132,7 +132,7 @@ public rt_revive_start(const id, const activator, const modes_struct:mode)
 	return PLUGIN_CONTINUE;
 }
 
-public rt_revive_loop_pre(const id, const activator, const Float:timer, modes_struct:mode)
+public rt_revive_loop_pre(const iEnt, const id, const activator, const Float:timer, modes_struct:mode)
 {
 	if(g_eCvars[BOMB] && rg_is_bomb_planted())
 	{
@@ -152,12 +152,21 @@ public rt_revive_loop_pre(const id, const activator, const Float:timer, modes_st
 		return PLUGIN_HANDLED;
 	}
 
+	if(g_eCvars[NO_MOVE] == 2)
+	{
+		if(!UTIL_GetNearestBoneCorpse(iEnt, activator))
+		{
+			client_print_color(activator, print_team_red, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_MAX_DISTANCE");
+			return PLUGIN_HANDLED;
+		}
+	}
+
 	return PLUGIN_CONTINUE;
 }
 
-public rt_revive_cancelled(const id, const activator, const modes_struct:mode)
+public rt_revive_cancelled(const iEnt, const id, const activator, const modes_struct:mode)
 {
-	if(g_eCvars[NO_MOVE])
+	if(g_eCvars[NO_MOVE] == 1)
 	{
 		set_entvar(activator, var_iuser3, get_entvar(activator, var_iuser3) & ~g_iPreventFlags);
 		rg_reset_maxspeed(activator);
@@ -169,9 +178,9 @@ public rt_revive_cancelled(const id, const activator, const modes_struct:mode)
 	}
 }
 
-public rt_revive_end(const id, const activator, const modes_struct:mode)
+public rt_revive_end(const iEnt, const id, const activator, const modes_struct:mode)
 {
-	new modes_struct:iMode = get_entvar(UTIL_GetEntityById(id), var_iuser3);
+	new modes_struct:iMode = get_entvar(iEnt, var_iuser3);
 
 	if(iMode != MODE_PLANT)
 	{
@@ -181,7 +190,7 @@ public rt_revive_end(const id, const activator, const modes_struct:mode)
 		}
 	}
 
-	if(g_eCvars[NO_MOVE])
+	if(g_eCvars[NO_MOVE] == 1)
 	{
 		set_entvar(activator, var_iuser3, get_entvar(activator, var_iuser3) & ~g_iPreventFlags);
 		rg_reset_maxspeed(activator);
@@ -296,7 +305,7 @@ public RegisterCvars()
 		"rt_no_move",
 		"1",
 		FCVAR_NONE,
-		"Cannot move during resurrection/planting",
+		"Unable to move during resurrection/planting. 0 - allowed, 1 - not allowed, 2 - allowed, but close to corpse",
 		true,
 		0.0),
 		g_eCvars[NO_MOVE]

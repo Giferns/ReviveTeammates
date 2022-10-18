@@ -57,7 +57,7 @@ public plugin_cfg()
 	UTIL_UploadConfigs();
 }
 
-public rt_revive_start(const id, const activator, const modes_struct:mode)
+public rt_revive_start(const iEnt, const id, const activator, const modes_struct:mode)
 {
 	switch(mode)
 	{
@@ -78,7 +78,7 @@ public rt_revive_start(const id, const activator, const modes_struct:mode)
 	}
 }
 
-public rt_revive_loop_post(const id, const activator, const Float:timer, modes_struct:mode)
+public rt_revive_loop_post(const iEnt, const id, const activator, const Float:timer, modes_struct:mode)
 {
 	switch(mode)
 	{
@@ -99,13 +99,13 @@ public rt_revive_loop_post(const id, const activator, const Float:timer, modes_s
 	}
 }
 
-public rt_revive_end(const id, const activator, const modes_struct:mode)
+public rt_revive_end(const iEnt, const id, const activator, const modes_struct:mode)
 {
 	switch(mode)
 	{
 		case MODE_REVIVE:
 		{
-			new modes_struct:iMode = get_entvar(UTIL_GetEntityById(id), var_iuser3);
+			new modes_struct:iMode = get_entvar(iEnt, var_iuser3);
 			
 			if(iMode != MODE_PLANT && g_iSounds[SECTION_REVIVE_END])
 			{
