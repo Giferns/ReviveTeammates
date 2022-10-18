@@ -153,8 +153,7 @@ public RegisterCvars()
 		"1",
 		FCVAR_NONE,
 		"Number of frags for resurrection",
-		true,
-		1.0),
+		true),
 		g_eCvars[FRAGS]
 	);
 }
