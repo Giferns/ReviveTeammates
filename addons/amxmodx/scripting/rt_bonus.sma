@@ -159,14 +159,19 @@ public RegisterCvars()
 		"1",
 		FCVAR_NONE,
 		"Number of frags for resurrection",
-		true),
+		true,
+		0.0),
 		g_eCvars[FRAGS]
 	);
 	bind_pcvar_num(create_cvar(
 		"rt_restore_death",
 		"0",
 		FCVAR_NONE,
-		"Remove death point after revive"),
+		"Remove the death point of a dead player after resurrection",
+		true,
+		0.0,
+		true,
+		1.0),
 		g_eCvars[NO_DEATHPOINT]
 	);
 }

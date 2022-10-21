@@ -132,7 +132,9 @@ public RegisterCvars()
 		FCVAR_NONE,
 		"0 - HUD, 1 - bartime(orange line)",
 		true,
-		0.0),
+		0.0,
+		true,
+		1.0),
 		g_eCvars[TIMER_TYPE]
 	);
 }

@@ -224,7 +224,9 @@ public RegisterCvars()
 		FCVAR_NONE,
 		"Playback of the resurrection/planting end sound for nearby players",
 		true,
-		0.0),
+		0.0,
+		true,
+		1.0),
 		g_eCvars[NEARBY_PLAYERS]
 	);
 }

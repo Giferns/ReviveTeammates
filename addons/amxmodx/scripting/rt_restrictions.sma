@@ -262,7 +262,9 @@ public RegisterCvars()
 		FCVAR_NONE,
 		"Block shooting during resurrection/planting",
 		true,
-		0.0),
+		0.0,
+		true,
+		1.0),
 		g_eCvars[NO_FIRE]
 	);
 	bind_pcvar_num(create_cvar(
@@ -271,7 +273,9 @@ public RegisterCvars()
 		FCVAR_NONE,
 		"You cannot resurrect/plant if there is a bomb",
 		true,
-		0.0),
+		0.0,
+		true,
+		1.0),
 		g_eCvars[BOMB]
 	);
 	bind_pcvar_num(create_cvar(
@@ -280,7 +284,9 @@ public RegisterCvars()
 		FCVAR_NONE,
 		"You can't resurrect/plant if there are 1x1 left",
 		true,
-		0.0),
+		0.0,
+		true,
+		1.0),
 		g_eCvars[DUEL]
 	);
 	bind_pcvar_num(create_cvar(
@@ -289,7 +295,9 @@ public RegisterCvars()
 		FCVAR_NONE,
 		"You cannot resurrect/plant if there is 1 live player left in one of the teams",
 		true,
-		0.0),
+		0.0,
+		true,
+		1.0),
 		g_eCvars[SURVIVOR]
 	);
 	bind_pcvar_num(create_cvar(
@@ -307,7 +315,9 @@ public RegisterCvars()
 		FCVAR_NONE,
 		"Unable to move during resurrection/planting. 0 - allowed, 1 - not allowed, 2 - allowed, but close to corpse",
 		true,
-		0.0),
+		0.0,
+		true,
+		2.0),
 		g_eCvars[NO_MOVE]
 	);
 }

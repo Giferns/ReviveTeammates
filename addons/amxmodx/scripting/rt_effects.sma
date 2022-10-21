@@ -226,7 +226,9 @@ public RegisterCvars()
 		FCVAR_NONE,
 		"Automatically observe the resurrecting player",
 		true,
-		0.0),
+		0.0,
+		true,
+		1.0),
 		g_eCvars[SPECTATOR]
 	);
 	bind_pcvar_num(create_cvar(
@@ -235,7 +237,9 @@ public RegisterCvars()
 		FCVAR_NONE,
 		"Notification under Timer(DHUD)",
 		true,
-		0.0),
+		0.0,
+		true,
+		1.0),
 		g_eCvars[NOTIFY_DHUD]
 	);
 	bind_pcvar_string(create_cvar(
