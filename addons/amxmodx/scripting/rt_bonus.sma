@@ -77,14 +77,15 @@ public rt_revive_end(const iEnt, const id, const activator, const modes_struct:m
 		if(g_eCvars[HEALTH])
 		{
 			set_entvar(id, var_health, g_eCvars[HEALTH]);
+            set_entvar(id, var_max_health, g_eCvars[HEALTH]);
 		}
 
-		if(g_eCvars[ARMOR_TYPE])
+		if(g_eCvars[ARMOR] > 0)
 		{
-			rg_set_user_armor(id, g_eCvars[ARMOR], ArmorType:ARMOR_TYPE);
+			rg_set_user_armor(id, g_eCvars[ARMOR], ArmorType:g_eCvars[ARMOR_TYPE]);
 		}
 
-		if(g_szWeapon[0][0] != EOS)
+		if(g_iWeapons > 0)
 		{
 			rg_remove_all_items(id);
 
@@ -92,10 +93,6 @@ public rt_revive_end(const iEnt, const id, const activator, const modes_struct:m
 			{
 				rg_give_item(id, g_szWeapon[i]);
 			}
-		}
-		else
-		{
-			rg_give_default_items(id);
 		}
 
 		if(g_eCvars[FRAGS])
@@ -143,7 +140,9 @@ public RegisterCvars()
 		FCVAR_NONE,
 		"0 - do not issue armor, 1 - bulletproof vest, 2 - bulletproof vest with helmet",
 		true,
-		0.0),
+		0.0,
+        true,
+        2.0),
 		g_eCvars[ARMOR_TYPE]
 	);
 	bind_pcvar_num(create_cvar(
@@ -160,8 +159,7 @@ public RegisterCvars()
 		"1",
 		FCVAR_NONE,
 		"Number of frags for resurrection",
-		true,
-		1.0),
+		true),
 		g_eCvars[FRAGS]
 	);
 	bind_pcvar_num(create_cvar(
