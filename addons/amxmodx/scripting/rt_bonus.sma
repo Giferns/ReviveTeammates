@@ -77,7 +77,7 @@ public rt_revive_end(const iEnt, const id, const activator, const modes_struct:m
 		if(g_eCvars[HEALTH])
 		{
 			set_entvar(id, var_health, g_eCvars[HEALTH]);
-            set_entvar(id, var_max_health, g_eCvars[HEALTH]);
+			set_entvar(id, var_max_health, g_eCvars[HEALTH]);
 		}
 
 		if(g_eCvars[ARMOR] > 0)
@@ -91,7 +91,12 @@ public rt_revive_end(const iEnt, const id, const activator, const modes_struct:m
 
 			for(new i; i <= g_iWeapons; i++)
 			{
-				rg_give_item(id, g_szWeapon[i]);
+				new iWeapon = rg_give_item(id, g_szWeapon[i]);
+
+				if(iWeapon != -1)
+				{
+					set_member(id, m_rgAmmo, rg_get_iteminfo(iWeapon, ItemInfo_iMaxAmmo1), get_member(iWeapon, m_Weapon_iPrimaryAmmoType));
+				}
 			}
 		}
 
