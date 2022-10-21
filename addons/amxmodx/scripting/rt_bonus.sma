@@ -10,7 +10,8 @@ enum CVARS
 	Float:HEALTH,
 	ARMOR_TYPE,
 	ARMOR,
-	FRAGS
+	FRAGS,
+	NO_DEATHPOINT
 };
 
 new g_eCvars[CVARS];
@@ -98,6 +99,11 @@ public rt_revive_end(const iEnt, const id, const activator, const modes_struct:m
 		{
 			ExecuteHamB(Ham_AddPoints, activator, g_eCvars[FRAGS], false);
 		}
+		
+		if(g_eCvars[NO_DEATHPOINT])
+		{
+			set_member(id, m_iDeaths, max(get_member(id, m_iDeaths) - 1, 0));
+		}
 	}
 }
 
@@ -155,5 +161,12 @@ public RegisterCvars()
 		"Number of frags for resurrection",
 		true),
 		g_eCvars[FRAGS]
+	);
+	bind_pcvar_num(create_cvar(
+		"rt_restore_death",
+		"0",
+		FCVAR_NONE,
+		"Remove death point after revive"),
+		g_eCvars[NO_DEATHPOINT]
 	);
 }
