@@ -74,14 +74,6 @@ public rt_revive_start(const iEnt, const id, const activator, const modes_struct
 	}
 }
 
-public rt_revive_loop_pre(const iEnt, const id, const activator, const Float:timer, modes_struct:mode)
-{
-	if(g_eCvars[TIMER_TYPE] == 1)
-	{
-		rg_send_bartime2(id, g_eTimeData[CEIL_TIME], floatround((1.0 - timer / g_eTimeData[CEIL_TIME]) * 100));
-	}
-}
-
 public rt_revive_loop_post(const iEnt, const id, const activator, const Float:timer, modes_struct:mode)
 {
 	if(g_eCvars[TIMER_TYPE] == 0)
