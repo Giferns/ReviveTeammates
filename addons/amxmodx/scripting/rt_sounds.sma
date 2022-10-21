@@ -65,14 +65,28 @@ public rt_revive_start(const iEnt, const id, const activator, const modes_struct
 		{
 			if(g_iSounds[SECTION_REVIVE_START])
 			{
-				rg_send_audio(activator, g_szSounds[SECTION_REVIVE_START][random(g_iSounds[SECTION_REVIVE_START])]);
+				if(g_eCvars[NEARBY_PLAYERS] == 2)
+				{
+					PlaybackSoundNearbyPlayers(id, g_szSounds[SECTION_REVIVE_START][random(g_iSounds[SECTION_REVIVE_START])]);
+				}
+				else
+				{
+					rg_send_audio(activator, g_szSounds[SECTION_REVIVE_START][random(g_iSounds[SECTION_REVIVE_START])]);
+				}
 			}
 		}
 		case MODE_PLANT:
 		{
 			if(g_iSounds[SECTION_PLANT_START])
 			{
-				rg_send_audio(activator, g_szSounds[SECTION_PLANT_START][random(g_iSounds[SECTION_PLANT_START])]);
+				if(g_eCvars[NEARBY_PLAYERS] == 2)
+				{
+					PlaybackSoundNearbyPlayers(id, g_szSounds[SECTION_PLANT_START][random(g_iSounds[SECTION_PLANT_START])]);
+				}
+				else
+				{
+					rg_send_audio(activator, g_szSounds[SECTION_PLANT_START][random(g_iSounds[SECTION_PLANT_START])]);
+				}
 			}
 		}
 	}
@@ -86,14 +100,28 @@ public rt_revive_loop_post(const iEnt, const id, const activator, const Float:ti
 		{
 			if(g_iSounds[SECTION_REVIVE_LOOP])
 			{
-				rg_send_audio(activator, g_szSounds[SECTION_REVIVE_LOOP][random(g_iSounds[SECTION_REVIVE_LOOP])]);
+				if(g_eCvars[NEARBY_PLAYERS] == 2)
+				{
+					PlaybackSoundNearbyPlayers(id, g_szSounds[SECTION_REVIVE_LOOP][random(g_iSounds[SECTION_REVIVE_LOOP])]);
+				}
+				else
+				{
+					rg_send_audio(activator, g_szSounds[SECTION_REVIVE_LOOP][random(g_iSounds[SECTION_REVIVE_LOOP])]);
+				}
 			}
 		}
 		case MODE_PLANT:
 		{
 			if(g_iSounds[SECTION_PLANT_LOOP])
 			{
-				rg_send_audio(activator, g_szSounds[SECTION_PLANT_LOOP][random(g_iSounds[SECTION_PLANT_LOOP])]);
+				if(g_eCvars[NEARBY_PLAYERS] == 2)
+				{
+					PlaybackSoundNearbyPlayers(id, g_szSounds[SECTION_PLANT_LOOP][random(g_iSounds[SECTION_PLANT_LOOP])]);
+				}
+				else
+				{
+					rg_send_audio(activator, g_szSounds[SECTION_PLANT_LOOP][random(g_iSounds[SECTION_PLANT_LOOP])]);
+				}
 			}
 		}
 	}
@@ -222,11 +250,11 @@ public RegisterCvars()
 		"rt_nearby_players",
 		"1",
 		FCVAR_NONE,
-		"Playback of the resurrection/planting end sound for nearby players",
+		"Play the resurrection/landing sound for nearby players. 0 - off, 1 - only ending sounds, 2 - all sounds",
 		true,
 		0.0,
 		true,
-		1.0),
+		2.0),
 		g_eCvars[NEARBY_PLAYERS]
 	);
 }
