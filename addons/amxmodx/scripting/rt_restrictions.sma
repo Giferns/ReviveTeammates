@@ -13,7 +13,9 @@ enum CVARS
 	DUEL,
 	SURVIVOR,
 	MIN_ROUND,
-	NO_MOVE
+	NO_MOVE,
+	WIN_DIFF,
+	Float:REMAINING_TIME
 };
 
 new g_eCvars[CVARS];
@@ -116,6 +118,18 @@ public rt_revive_start(const iEnt, const id, const activator, const modes_struct
 		client_print_color(activator, print_team_red, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_SURVIVOR");
 		return PLUGIN_HANDLED;
 	}
+	
+	if(g_eCvars[WIN_DIFF] > 0 && (rg_get_team_wins_row(g_eCvar[WIN_DIFF]) == get_member(activator, m_iTeam)))
+	{
+		client_print_color(activator, print_team_red, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_WINS_DOMINATION");
+		return PLUGIN_HANDLED;
+	}
+	
+	if(g_eCvars[REMAINING_TIME] && rg_get_remaining_time() <= g_eCvars[REMAINING_TIME])
+	{
+		client_print_color(activator, print_team_red, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_REMAINING_TIME");
+		return PLUGIN_HANDLED;
+	}
 
 	if(g_eCvars[NO_MOVE] == 1)
 	{
@@ -149,6 +163,12 @@ public rt_revive_loop_pre(const iEnt, const id, const activator, const Float:tim
 	if(g_eCvars[SURVIVOR] && rg_users_count(1))
 	{
 		client_print_color(activator, print_team_red, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_SURVIVOR");
+		return PLUGIN_HANDLED;
+	}
+	
+	if(g_eCvars[REMAINING_TIME] && rg_get_remaining_time() <= g_eCvars[REMAINING_TIME])
+	{
+		client_print_color(activator, print_team_red, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_REMAINING_TIME");
 		return PLUGIN_HANDLED;
 	}
 
@@ -226,6 +246,28 @@ stock rg_users_count(mode)
 	}
 
 	return 0;
+}
+
+stock Float:rg_get_remaining_time()
+{
+	return (float(get_member_game(m_iRoundTimeSecs)) - get_gametime() + Float: get_member_game(m_fRoundStartTimeReal));
+}
+
+stock TeamName:rg_get_team_wins_row(const wins)
+{
+	new TeamName:team = TEAM_UNASSIGNED;
+	new iNumConsecutiveCTLoses = get_member_game(m_iNumConsecutiveCTLoses);
+	new iNumConsecutiveTerroristLoses = get_member_game(m_iNumConsecutiveTerroristLoses);
+	
+	if (iNumConsecutiveCTLoses > 0)
+		team = TEAM_TERRORIST;
+	else if (iNumConsecutiveTerroristLoses > 0)
+		team = TEAM_CT;
+	
+	if (abs(iNumConsecutiveCTLoses + iNumConsecutiveTerroristLoses) < wins)
+		team = TEAM_UNASSIGNED;
+	
+	return team;
 }
 
 public RegisterCvars()
@@ -319,5 +361,19 @@ public RegisterCvars()
 		true,
 		2.0),
 		g_eCvars[NO_MOVE]
+	);
+	bind_pcvar_num(create_cvar(
+		"rt_wins_domination",
+		"5",
+		FCVAR_NONE,
+		"Prohibition of resurrection/mining for the dominant team (consecutive wins)"),
+		g_eCvars[WIN_DIFF]
+	);
+	bind_pcvar_float(create_cvar(
+		"rt_remaining_time",
+		"30.0",
+		FCVAR_NONE,
+		"Prohibition of resurrection/mining until the end of the round"),
+		g_eCvars[REMAINING_TIME]
 	);
 }
