@@ -70,6 +70,11 @@ public rt_revive_start(const iEnt, const id, const activator, const modes_struct
 		case 1:
 		{
 			rg_send_bartime2(activator, g_eTimeData[CEIL_TIME], g_eTimeData[START_TIME]);
+
+			if(mode == MODE_REVIVE)
+			{
+				rg_send_bartime2(id, g_eTimeData[CEIL_TIME], g_eTimeData[START_TIME]);
+			}
 		}
 	}
 }
@@ -94,7 +99,11 @@ public rt_revive_cancelled(const iEnt, const id, const activator, const modes_st
 		}
 		case 1:
 		{
-			rg_send_bartime(activator, 0);
+			if(mode == MODE_REVIVE)
+			{
+				rg_send_bartime(activator, 0);
+				rg_send_bartime(id, 0);
+			}
 		}
 	}
 }

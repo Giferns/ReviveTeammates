@@ -15,6 +15,8 @@ enum CVARS
 	MIN_ROUND,
 	NO_MOVE,
 	WIN_DIFF,
+	REVIVE_COST,
+	PLANTING_COST,
 	Float:REMAINING_TIME
 };
 
@@ -89,18 +91,6 @@ public rt_revive_start(const iEnt, const id, const activator, const modes_struct
 		return PLUGIN_HANDLED;
 	}
 
-	if(mode == MODE_REVIVE && g_ePlayerData[activator][REVIVE_COUNT] >= g_eCvars[MAX_REVIVES])
-	{
-		client_print_color(activator, print_team_red, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_REVIVE_COUNT");
-		return PLUGIN_HANDLED;
-	}
-
-	if(mode == MODE_REVIVE && get_member(id, m_iNumSpawns) > g_eCvars[MAX_SPAWNS])
-	{
-		client_print_color(activator, print_team_red, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_MAX_SPAWNS");
-		return PLUGIN_HANDLED;
-	}
-
 	if(g_eCvars[BOMB] && rg_is_bomb_planted())
 	{
 		client_print_color(activator, print_team_red, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_BOMB");
@@ -119,7 +109,7 @@ public rt_revive_start(const iEnt, const id, const activator, const modes_struct
 		return PLUGIN_HANDLED;
 	}
 	
-	if(g_eCvars[WIN_DIFF] > 0 && (rg_get_team_wins_row(g_eCvars[WIN_DIFF]) == get_member(activator, m_iTeam)))
+	if(g_eCvars[WIN_DIFF] && (rg_get_team_wins_row(g_eCvars[WIN_DIFF]) == get_member(activator, m_iTeam)))
 	{
 		client_print_color(activator, print_team_red, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_WINS_DOMINATION");
 		return PLUGIN_HANDLED;
@@ -129,6 +119,38 @@ public rt_revive_start(const iEnt, const id, const activator, const modes_struct
 	{
 		client_print_color(activator, print_team_red, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_REMAINING_TIME", g_eCvars[REMAINING_TIME]);
 		return PLUGIN_HANDLED;
+	}
+
+	switch(mode)
+	{
+		case MODE_REVIVE:
+		{
+			if(g_ePlayerData[activator][REVIVE_COUNT] >= g_eCvars[MAX_REVIVES])
+			{
+				client_print_color(activator, print_team_red, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_REVIVE_COUNT");
+				return PLUGIN_HANDLED;
+			}
+
+			if(get_member(id, m_iNumSpawns) > g_eCvars[MAX_SPAWNS])
+			{
+				client_print_color(activator, print_team_red, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_MAX_SPAWNS");
+				return PLUGIN_HANDLED;
+			}
+
+			if(get_member(activator, m_iAccount) < g_eCvars[REVIVE_COST])
+			{
+				client_print_color(activator, print_team_red, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_NO_MONEY");
+				return PLUGIN_HANDLED;
+			}
+		}
+		case MODE_PLANT:
+		{
+			if(get_member(activator, m_iAccount) < g_eCvars[PLANTING_COST])
+			{
+				client_print_color(activator, print_team_red, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_NO_MONEY");
+				return PLUGIN_HANDLED;
+			}
+		}
 	}
 
 	if(g_eCvars[NO_MOVE] == 1)
@@ -200,13 +222,22 @@ public rt_revive_cancelled(const iEnt, const id, const activator, const modes_st
 
 public rt_revive_end(const iEnt, const id, const activator, const modes_struct:mode)
 {
-	new modes_struct:iMode = get_entvar(iEnt, var_iuser3);
-
-	if(iMode != MODE_PLANT)
+	switch(mode)
 	{
-		if(iMode != MODE_PLANT && mode == MODE_REVIVE)
+		case MODE_REVIVE:
 		{
-			g_ePlayerData[activator][REVIVE_COUNT]++;
+			new modes_struct:iMode = get_entvar(iEnt, var_iuser3);
+
+			if(iMode != MODE_PLANT)
+			{
+				g_ePlayerData[activator][REVIVE_COUNT]++;
+
+				rg_add_account(activator, -g_eCvars[REVIVE_COST]);
+			}
+		}
+		case MODE_PLANT:
+		{
+			rg_add_account(activator, -g_eCvars[PLANTING_COST]);
 		}
 	}
 
@@ -250,7 +281,7 @@ stock rg_users_count(mode)
 
 stock Float:rg_get_remaining_time()
 {
-	return (float(get_member_game(m_iRoundTimeSecs)) - get_gametime() + Float: get_member_game(m_fRoundStartTimeReal));
+	return (float(get_member_game(m_iRoundTimeSecs)) - get_gametime() + Float:get_member_game(m_fRoundStartTimeReal));
 }
 
 stock TeamName:rg_get_team_wins_row(const wins)
@@ -259,13 +290,19 @@ stock TeamName:rg_get_team_wins_row(const wins)
 	new iNumConsecutiveCTLoses = get_member_game(m_iNumConsecutiveCTLoses);
 	new iNumConsecutiveTerroristLoses = get_member_game(m_iNumConsecutiveTerroristLoses);
 	
-	if (iNumConsecutiveCTLoses > 0)
+	if(iNumConsecutiveCTLoses > 0)
+	{
 		team = TEAM_TERRORIST;
-	else if (iNumConsecutiveTerroristLoses > 0)
+	}
+	else if(iNumConsecutiveTerroristLoses > 0)
+	{
 		team = TEAM_CT;
+	}
 	
-	if (abs(iNumConsecutiveCTLoses + iNumConsecutiveTerroristLoses) < wins)
+	if(abs(iNumConsecutiveCTLoses + iNumConsecutiveTerroristLoses) < wins)
+	{
 		team = TEAM_UNASSIGNED;
+	}
 	
 	return team;
 }
@@ -363,17 +400,39 @@ public RegisterCvars()
 		g_eCvars[NO_MOVE]
 	);
 	bind_pcvar_num(create_cvar(
+		"rt_revive_cost",
+		"0",
+		FCVAR_NONE,
+		"Cost of resurrection",
+		true,
+		0.0),
+		g_eCvars[REVIVE_COST]
+	);
+	bind_pcvar_num(create_cvar(
+		"rt_planting_cost",
+		"0",
+		FCVAR_NONE,
+		"Cost of planting",
+		true,
+		0.0),
+		g_eCvars[PLANTING_COST]
+	);
+	bind_pcvar_num(create_cvar(
 		"rt_wins_domination",
 		"5",
 		FCVAR_NONE,
-		"Prohibition of resurrection/mining for the dominant team (consecutive wins)"),
+		"Prohibition of resurrection/planting for the dominant team(consecutive wins)",
+		true,
+		0.0),
 		g_eCvars[WIN_DIFF]
 	);
 	bind_pcvar_float(create_cvar(
 		"rt_remaining_time",
 		"30.0",
 		FCVAR_NONE,
-		"Prohibition of resurrection/mining until the end of the round"),
+		"Prohibition of resurrection/planting until the end of the round",
+		true,
+		0.0),
 		g_eCvars[REMAINING_TIME]
 	);
 }

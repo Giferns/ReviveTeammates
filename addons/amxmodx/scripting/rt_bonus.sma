@@ -7,6 +7,8 @@ enum CVARS
 {
 	WEAPONS[256],
 	WEAPONS_MAPS[256],
+	Float:REVIVE_HEALTH,
+	Float:PLANTING_HEALTH,
 	Float:HEALTH,
 	ARMOR_TYPE,
 	ARMOR,
@@ -70,44 +72,62 @@ public plugin_cfg()
 
 public rt_revive_end(const iEnt, const id, const activator, const modes_struct:mode)
 {
-	new modes_struct:iMode = get_entvar(iEnt, var_iuser3);
-
-	if(iMode != MODE_PLANT && mode == MODE_REVIVE)
+	switch(mode)
 	{
-		if(g_eCvars[HEALTH])
+		case MODE_REVIVE:
 		{
-			set_entvar(id, var_health, g_eCvars[HEALTH]);
-			set_entvar(id, var_max_health, g_eCvars[HEALTH]);
-		}
+			new modes_struct:iMode = get_entvar(iEnt, var_iuser3);
 
-		if(g_eCvars[ARMOR] > 0)
-		{
-			rg_set_user_armor(id, g_eCvars[ARMOR], ArmorType:g_eCvars[ARMOR_TYPE]);
-		}
-
-		if(g_iWeapons > 0)
-		{
-			rg_remove_all_items(id);
-
-			for(new i; i <= g_iWeapons; i++)
+			if(iMode != MODE_PLANT)
 			{
-				new iWeapon = rg_give_item(id, g_szWeapon[i]);
-
-				if(iWeapon != -1)
+				if(g_eCvars[REVIVE_HEALTH])
 				{
-					set_member(id, m_rgAmmo, rg_get_iteminfo(iWeapon, ItemInfo_iMaxAmmo1), get_member(iWeapon, m_Weapon_iPrimaryAmmoType));
+					set_entvar(activator, var_health, floatclamp(get_entvar(activator, var_health) + g_eCvars[REVIVE_HEALTH], 1.0, get_entvar(activator, var_max_health)));
+				}
+
+				if(g_eCvars[HEALTH])
+				{
+					set_entvar(id, var_health, g_eCvars[HEALTH]);
+					set_entvar(id, var_max_health, g_eCvars[HEALTH]);
+				}
+
+				if(g_eCvars[ARMOR] > 0)
+				{
+					rg_set_user_armor(id, g_eCvars[ARMOR], ArmorType:g_eCvars[ARMOR_TYPE]);
+				}
+
+				if(g_iWeapons > 0)
+				{
+					rg_remove_all_items(id);
+
+					for(new i; i <= g_iWeapons; i++)
+					{
+						new iWeapon = rg_give_item(id, g_szWeapon[i]);
+
+						if(iWeapon != -1)
+						{
+							set_member(id, m_rgAmmo, rg_get_iteminfo(iWeapon, ItemInfo_iMaxAmmo1), get_member(iWeapon, m_Weapon_iPrimaryAmmoType));
+						}
+					}
+				}
+
+				if(g_eCvars[FRAGS])
+				{
+					ExecuteHamB(Ham_AddPoints, activator, g_eCvars[FRAGS], false);
+				}
+				
+				if(g_eCvars[NO_DEATHPOINT])
+				{
+					set_member(id, m_iDeaths, max(get_member(id, m_iDeaths) - 1, 0));
 				}
 			}
 		}
-
-		if(g_eCvars[FRAGS])
+		case MODE_PLANT:
 		{
-			ExecuteHamB(Ham_AddPoints, activator, g_eCvars[FRAGS], false);
-		}
-		
-		if(g_eCvars[NO_DEATHPOINT])
-		{
-			set_member(id, m_iDeaths, max(get_member(id, m_iDeaths) - 1, 0));
+			if(g_eCvars[PLANTING_HEALTH])
+			{
+				set_entvar(activator, var_health, floatclamp(get_entvar(activator, var_health) + g_eCvars[PLANTING_HEALTH], 1.0, get_entvar(activator, var_max_health)));
+			}
 		}
 	}
 }
@@ -129,6 +149,24 @@ public RegisterCvars()
 		"What weapons should be given to the player after resurrection on 'awp_' maps(no more than 6)(otherwise standard from game.cfg)"),
 		g_eCvars[WEAPONS_MAPS],
 		charsmax(g_eCvars[WEAPONS_MAPS])
+	);
+	bind_pcvar_float(create_cvar(
+		"rt_revive_health",
+		"0.0",
+		FCVAR_NONE,
+		"How much more health to add after resurrection",
+		true,
+		0.0),
+		g_eCvars[REVIVE_HEALTH]
+	);
+	bind_pcvar_float(create_cvar(
+		"rt_planting_health",
+		"0.0",
+		FCVAR_NONE,
+		"How much more health to add after planting",
+		true,
+		0.0),
+		g_eCvars[PLANTING_HEALTH]
 	);
 	bind_pcvar_float(create_cvar(
 		"rt_health",
