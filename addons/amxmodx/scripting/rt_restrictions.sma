@@ -119,7 +119,7 @@ public rt_revive_start(const iEnt, const id, const activator, const modes_struct
 		return PLUGIN_HANDLED;
 	}
 	
-	if(g_eCvars[WIN_DIFF] > 0 && (rg_get_team_wins_row(g_eCvar[WIN_DIFF]) == get_member(activator, m_iTeam)))
+	if(g_eCvars[WIN_DIFF] > 0 && (rg_get_team_wins_row(g_eCvars[WIN_DIFF]) == get_member(activator, m_iTeam)))
 	{
 		client_print_color(activator, print_team_red, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_WINS_DOMINATION");
 		return PLUGIN_HANDLED;
@@ -127,7 +127,7 @@ public rt_revive_start(const iEnt, const id, const activator, const modes_struct
 	
 	if(g_eCvars[REMAINING_TIME] && rg_get_remaining_time() <= g_eCvars[REMAINING_TIME])
 	{
-		client_print_color(activator, print_team_red, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_REMAINING_TIME");
+		client_print_color(activator, print_team_red, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_REMAINING_TIME", g_eCvars[REMAINING_TIME]);
 		return PLUGIN_HANDLED;
 	}
 
@@ -168,7 +168,7 @@ public rt_revive_loop_pre(const iEnt, const id, const activator, const Float:tim
 	
 	if(g_eCvars[REMAINING_TIME] && rg_get_remaining_time() <= g_eCvars[REMAINING_TIME])
 	{
-		client_print_color(activator, print_team_red, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_REMAINING_TIME");
+		client_print_color(activator, print_team_red, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_REMAINING_TIME", g_eCvars[REMAINING_TIME]);
 		return PLUGIN_HANDLED;
 	}
 
