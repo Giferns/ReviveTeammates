@@ -12,7 +12,7 @@
 #include <hamsandwich>
 #include <reapi>
 
-#define VERSION "0.8.0"
+#define VERSION "0.9.0"
 #define AUTHORS "ufame & Albertio"
 
 enum modes_struct
@@ -23,8 +23,6 @@ enum modes_struct
 };
 
 new const DEAD_BODY_CLASSNAME[] = "rt_corpse_empty";
-
-const Float:MAX_PLAYER_USE_RADIUS = 64.0;
 
 /**
 * Called after the activator starts resurrection/planting (on press USE - `E`)
@@ -106,27 +104,6 @@ stock UTIL_RemoveCorpses(const id = 0)
 		set_entvar(iEnt, var_flags, FL_KILLME);
 		set_entvar(iEnt, var_nextthink, -1.0);
 	}
-}
-
-/*
-* Get the nearest bone of the corpses
-*/
-stock UTIL_GetNearestBoneCorpse(const iEnt, const activator)
-{
-	new Float:vPlOrigin[3], Float:vBoneOrigin[3];
-	get_entvar(activator, var_origin, vPlOrigin);
-	
-	for(new iBone = 1; iBone <= 54; iBone++)
-	{
-		engfunc(EngFunc_GetBonePosition, iEnt, iBone, vBoneOrigin);
- 
-		if(vector_distance(vPlOrigin, vBoneOrigin) < MAX_PLAYER_USE_RADIUS)
-		{
-			return iBone;
-		}
-	}
- 
-	return 0;
 }
 
 /*

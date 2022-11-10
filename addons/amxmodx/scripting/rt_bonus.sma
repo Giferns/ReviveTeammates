@@ -82,7 +82,7 @@ public rt_revive_end(const iEnt, const id, const activator, const modes_struct:m
 			{
 				if(g_eCvars[REVIVE_HEALTH])
 				{
-					set_entvar(activator, var_health, floatclamp(get_entvar(activator, var_health) + g_eCvars[REVIVE_HEALTH], 1.0, get_entvar(activator, var_max_health)));
+					rg_add_health_to_player(activator, g_eCvars[REVIVE_HEALTH]);
 				}
 
 				if(g_eCvars[HEALTH])
@@ -126,10 +126,15 @@ public rt_revive_end(const iEnt, const id, const activator, const modes_struct:m
 		{
 			if(g_eCvars[PLANTING_HEALTH])
 			{
-				set_entvar(activator, var_health, floatclamp(get_entvar(activator, var_health) + g_eCvars[PLANTING_HEALTH], 1.0, get_entvar(activator, var_max_health)));
+				rg_add_health_to_player(activator, g_eCvars[PLANTING_HEALTH]);
 			}
 		}
 	}
+}
+
+stock rg_add_health_to_player(const id, const Float:flHealth)
+{
+	set_entvar(id, var_health, floatclamp(Float:get_entvar(id, var_health) + flHealth, 1.0, Float:get_entvar(id, var_max_health)));
 }
 
 public RegisterCvars()

@@ -5,7 +5,8 @@ enum CVARS
 {
 	Float:REVIVE_TIME,
 	Float:ANTIFLOOD_TIME,
-	Float:CORPSE_TIME
+	Float:CORPSE_TIME,
+	Float:SEARCH_RADIUS
 };
 
 new g_eCvars[CVARS];
@@ -63,8 +64,6 @@ public plugin_end()
 
 public client_disconnected(id)
 {
-	UTIL_RemoveCorpses(id);
-
 	g_flLastUse[id] = 0.0;
 }
 
@@ -80,39 +79,18 @@ public CBasePlayer_UseEmpty_Pre(const iActivator)
 		return;
 	}
 
-	new Float:vPlOrigin[3], Float:vPlViewOfs[3], Float:vPlAngle[3];
-
+	new iEnt = NULLENT, Float:vPlOrigin[3], Float:vEntOrigin[3];
 	get_entvar(iActivator, var_origin, vPlOrigin);
-	get_entvar(iActivator, var_view_ofs, vPlViewOfs);
-	get_entvar(iActivator, var_v_angle, vPlAngle);
-	
-	engfunc(EngFunc_MakeVectors, vPlAngle);
-	global_get(glb_v_forward, vPlAngle);
-	
-	for(new i; i < 3; i++)
-	{
-		vPlOrigin[i] += vPlViewOfs[i];
-		vPlAngle[i] = vPlAngle[i] * MAX_PLAYER_USE_RADIUS * 2.0 + vPlOrigin[i];
-	}
-
-	new iEnt = NULLENT, pHit;
-
-	engfunc(EngFunc_TraceLine, vPlOrigin, vPlAngle, DONT_IGNORE_MONSTERS, iActivator, 0);
-	get_tr2(0, TR_vecEndPos, vPlAngle);
 
 	while((iEnt = rg_find_ent_by_class(iEnt, DEAD_BODY_CLASSNAME)) > 0)
 	{
-		if(UTIL_GetNearestBoneCorpse(iEnt, iActivator))
-		{
-			engfunc(EngFunc_TraceModel, vPlOrigin, vPlAngle, HULL_POINT, iEnt, 0);
-			pHit = get_tr2(0, TR_pHit);
-						
-			if(pHit == iEnt && !is_nullent(pHit))
-			{
-				Corpse_Use(iEnt, iActivator);
+		get_entvar(iEnt, var_vuser4, vEntOrigin);
 
-				return;
-			}
+		if(is_in_viewcone(iActivator, vEntOrigin, 1) && vector_distance(vPlOrigin, vEntOrigin) < g_eCvars[SEARCH_RADIUS])
+		{
+			Corpse_Use(iEnt, iActivator);
+
+			return;
 		}
 	}
 }
@@ -128,10 +106,14 @@ public Corpse_Use(const iEnt, const iActivator)
 
 	if(!is_user_connected(iPlayer) || is_user_alive(iPlayer))
 	{
+		client_print_color(iActivator, print_team_red, "%L %L", iActivator, "RT_CHAT_TAG", iActivator, "RT_DISCONNECTED");
+
+		UTIL_RemoveCorpses(iPlayer);
+
 		return;
 	}
 
-	new TeamName:iActTeam = get_member(iActivator, m_iTeam), TeamName:iPlTeam = get_member(iPlayer, m_iTeam);
+	new TeamName:iActTeam = get_member(iActivator, m_iTeam), TeamName:iPlTeam = get_member(iPlayer, m_iTeam), TeamName:iEntTeam = get_entvar(iEnt, var_team);
 	new modes_struct:eCurrentMode = (iActTeam == iPlTeam) ? MODE_REVIVE : MODE_PLANT;
 	
 	if(g_iPluginLoaded == INVALID_PLUGIN_ID && eCurrentMode == MODE_PLANT)
@@ -141,6 +123,13 @@ public Corpse_Use(const iEnt, const iActivator)
 
 	if(iActTeam == TEAM_SPECTATOR || iPlTeam == TEAM_SPECTATOR)
 	{
+		return;
+	}
+
+	if(iEntTeam != iPlTeam)
+	{
+		client_print_color(iActivator, print_team_red, "%L %L", iActivator, "RT_CHAT_TAG", iActivator, "RT_CHANGE_TEAM");
+
 		return;
 	}
 
@@ -175,28 +164,8 @@ public Corpse_Use(const iEnt, const iActivator)
 
 	g_flLastUse[iActivator] = flGameTime + g_eCvars[ANTIFLOOD_TIME];
 
-	new TeamName:iEntTeam = get_entvar(iEnt, var_team);
-
-	if(iEntTeam != iPlTeam)
-	{
-		client_print_color(iActivator, print_team_red, "%L %L", iActivator, "RT_CHAT_TAG", iActivator, "RT_CHANGE_TEAM");
-
-		UTIL_ResetEntityThink(g_eForwards[ReviveCancelled], iEnt, iPlayer, iActivator, eCurrentMode);
-
-		return;
-	}
-
-	switch(eCurrentMode)
-	{
-		case MODE_REVIVE:
-		{
-			client_print_color(iActivator, print_team_blue, "%L %L", iActivator, "RT_CHAT_TAG", iActivator, "RT_TIMER_REVIVE", iPlayer);
-		}
-		case MODE_PLANT:
-		{
-			client_print_color(iActivator, print_team_blue, "%L %L", iActivator, "RT_CHAT_TAG", iActivator, "RT_TIMER_PLANT", iPlayer);
-		}
-	}
+	client_print_color(iActivator, print_team_blue, "%L %L", iActivator, "RT_CHAT_TAG",
+	iActivator, eCurrentMode == MODE_REVIVE ? "RT_TIMER_REVIVE" : "RT_TIMER_PLANT", iPlayer);
 
 	g_iTimeUntil[iActivator] = 0;
 
@@ -214,8 +183,17 @@ public Corpse_Think(const iEnt)
 	}
 
 	new iPlayer = get_entvar(iEnt, var_owner), iActivator = get_entvar(iEnt, var_iuser1);
-	new TeamName:iActTeam = get_member(iActivator, m_iTeam), TeamName:iPlTeam = get_member(iPlayer, m_iTeam);
+	new TeamName:iActTeam = get_member(iActivator, m_iTeam), TeamName:iPlTeam = get_member(iPlayer, m_iTeam), TeamName:iEntTeam = get_entvar(iEnt, var_team);
 	new modes_struct:eCurrentMode = (iActTeam == iPlTeam) ? MODE_REVIVE : MODE_PLANT;
+
+	if(iEntTeam != iPlTeam)
+	{
+		client_print_color(iActivator, print_team_red, "%L %L", iActivator, "RT_CHAT_TAG", iActivator, "RT_CHANGE_TEAM");
+
+		UTIL_ResetEntityThink(g_eForwards[ReviveCancelled], iEnt, iPlayer, iActivator, eCurrentMode);
+
+		return;
+	}
 
 	new Float:flGameTime = get_gametime();
 	
@@ -231,23 +209,15 @@ public Corpse_Think(const iEnt)
 		client_print_color(iActivator, print_team_red, "%L %L", iActivator, "RT_CHAT_TAG", iActivator, "RT_DISCONNECTED");
 
 		UTIL_ResetEntityThink(g_eForwards[ReviveCancelled], iEnt, iPlayer, iActivator, eCurrentMode);
+		UTIL_RemoveCorpses(iPlayer);
 
 		return;
 	}
 
 	if(~get_entvar(iActivator, var_button) & IN_USE || !is_user_alive(iActivator))
 	{
-		switch(eCurrentMode)
-		{
-			case MODE_REVIVE:
-			{
-				client_print_color(iActivator, print_team_red, "%L %L", iActivator, "RT_CHAT_TAG", iActivator, "RT_CANCELLED_REVIVE", iPlayer);
-			}
-			case MODE_PLANT:
-			{
-				client_print_color(iActivator, print_team_red, "%L %L", iActivator, "RT_CHAT_TAG", iActivator, "RT_CANCELLED_PLANT", iPlayer);
-			}
-		}
+		client_print_color(iActivator, print_team_red, "%L %L", iActivator, "RT_CHAT_TAG",
+		iActivator, eCurrentMode == MODE_REVIVE ? "RT_CANCELLED_REVIVE" : "RT_CANCELLED_PLANT", iPlayer);
 		
 		UTIL_ResetEntityThink(g_eForwards[ReviveCancelled], iEnt, iPlayer, iActivator, eCurrentMode);
 
@@ -357,6 +327,11 @@ public MessageHook_ClCorpse()
 	get_entvar(iPlayer, var_angles, fAngles);
 	set_entvar(iEnt, var_angles, fAngles);
 
+	engfunc(EngFunc_GetBonePosition, iEnt, 2, fOrigin, fAngles);
+	set_entvar(iEnt, var_vuser4, fOrigin);
+
+	set_entvar(iEnt, var_fuser2, g_eCvars[SEARCH_RADIUS]);
+
 	SetThink(iEnt, "Corpse_Think");
 
 	if(g_eCvars[CORPSE_TIME])
@@ -395,5 +370,14 @@ public RegisterCvars()
 		true,
 		0.0),
 		g_eCvars[CORPSE_TIME]
+	);
+	bind_pcvar_float(create_cvar(
+		"rt_search_radius",
+		"64.0",
+		FCVAR_NONE,
+		"Search radius for a corpse",
+		true,
+		1.0),
+		g_eCvars[SEARCH_RADIUS]
 	);
 }

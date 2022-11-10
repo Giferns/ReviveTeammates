@@ -196,7 +196,11 @@ public rt_revive_loop_pre(const iEnt, const id, const activator, const Float:tim
 
 	if(g_eCvars[NO_MOVE] == 2)
 	{
-		if(!UTIL_GetNearestBoneCorpse(iEnt, activator))
+		new Float:vPlOrigin[3], Float:vEntOrigin[3];
+		get_entvar(activator, var_origin, vPlOrigin);
+		get_entvar(iEnt, var_vuser4, vEntOrigin);
+
+		if(vector_distance(vPlOrigin, vEntOrigin) > get_entvar(iEnt, var_fuser2))
 		{
 			client_print_color(activator, print_team_red, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_MAX_DISTANCE");
 			return PLUGIN_HANDLED;
