@@ -13,7 +13,7 @@
 #include <hamsandwich>
 #include <reapi>
 
-#define VERSION "0.10.0"
+#define VERSION "0.10.1"
 #define AUTHORS "ufame & Albertio"
 
 enum modes_struct
