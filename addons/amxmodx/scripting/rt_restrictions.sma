@@ -1,4 +1,3 @@
-#include <amxmodx>
 #include <rt_api>
 
 #define m_iCurrentRound (get_member_game(m_iTotalRoundsPlayed) + 1)
@@ -33,6 +32,12 @@ new g_iAccessFlags, g_iPreventFlags;
 
 new HookChain:g_pHook_ResetMaxSpeed;
 
+public plugin_precache()
+{
+	RegisterCvars();
+	UTIL_UploadConfigs();
+}
+
 public plugin_init()
 {
 	register_plugin("Revive Teammates: Restrictions", VERSION, AUTHORS);
@@ -41,16 +46,12 @@ public plugin_init()
 
 	RegisterHookChain(RG_CSGameRules_CleanUpMap, "CSGameRules_CleanUpMap_Post", .post = 1);
 	DisableHookChain(g_pHook_ResetMaxSpeed = RegisterHookChain(RG_CBasePlayer_ResetMaxSpeed, "CBasePlayer_ResetMaxSpeed_Post", .post = 1));
-
-	RegisterCvars();
 	
 	g_iPreventFlags = (PLAYER_PREVENT_CLIMB|PLAYER_PREVENT_JUMP);
 }
 
 public plugin_cfg()
 {
-	UTIL_UploadConfigs();
-
 	g_iAccessFlags = read_flags(g_eCvars[ACCESS]);
 
 	if(g_eCvars[NO_MOVE] == 1)
@@ -109,7 +110,7 @@ public rt_revive_start(const iEnt, const id, const activator, const modes_struct
 		return PLUGIN_HANDLED;
 	}
 	
-	if(g_eCvars[WIN_DIFF] && (rg_get_team_wins_row(g_eCvars[WIN_DIFF]) == get_member(activator, m_iTeam)))
+	if(g_eCvars[WIN_DIFF] && (rg_get_team_wins_row(g_eCvars[WIN_DIFF]) == TeamName:get_member(activator, m_iTeam)))
 	{
 		client_print_color(activator, print_team_red, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_WINS_DOMINATION");
 		return PLUGIN_HANDLED;
@@ -288,27 +289,27 @@ stock Float:rg_get_remaining_time()
 	return (float(get_member_game(m_iRoundTimeSecs)) - get_gametime() + Float:get_member_game(m_fRoundStartTimeReal));
 }
 
-stock TeamName:rg_get_team_wins_row(const wins)
+stock TeamName:rg_get_team_wins_row(const iWins)
 {
-	new TeamName:team = TEAM_UNASSIGNED;
+	new TeamName:iTeam = TEAM_UNASSIGNED;
 	new iNumConsecutiveCTLoses = get_member_game(m_iNumConsecutiveCTLoses);
 	new iNumConsecutiveTerroristLoses = get_member_game(m_iNumConsecutiveTerroristLoses);
 	
 	if(iNumConsecutiveCTLoses > 0)
 	{
-		team = TEAM_TERRORIST;
+		iTeam = TEAM_TERRORIST;
 	}
 	else if(iNumConsecutiveTerroristLoses > 0)
 	{
-		team = TEAM_CT;
+		iTeam = TEAM_CT;
 	}
 	
-	if(abs(iNumConsecutiveCTLoses + iNumConsecutiveTerroristLoses) < wins)
+	if(abs(iNumConsecutiveCTLoses + iNumConsecutiveTerroristLoses) < iWins)
 	{
-		team = TEAM_UNASSIGNED;
+		iTeam = TEAM_UNASSIGNED;
 	}
 	
-	return team;
+	return iTeam;
 }
 
 public RegisterCvars()

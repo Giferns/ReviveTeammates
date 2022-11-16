@@ -1,4 +1,3 @@
-#include <amxmodx>
 #include <rt_api>
 
 enum CVARS
@@ -31,6 +30,9 @@ public plugin_precache()
 	g_szModels[FireBall1] = precache_model("sprites/zerogxplode.spr");
 	g_szModels[FireBall2] = precache_model("sprites/eexplo.spr");
 	g_szModels[FireBall3] = precache_model("sprites/fexplo.spr");
+
+	RegisterCvars();
+	UTIL_UploadConfigs();
 }
 
 public plugin_init()
@@ -40,13 +42,6 @@ public plugin_init()
 	register_dictionary("rt_library.txt");
 
 	RegisterHookChain(RG_CSGameRules_CleanUpMap, "CSGameRules_CleanUpMap_Post", .post = 1);
-
-	RegisterCvars();
-}
-
-public plugin_cfg()
-{
-	UTIL_UploadConfigs();
 }
 
 public CSGameRules_CleanUpMap_Post()
@@ -99,7 +94,7 @@ public rt_revive_end(const iEnt, const id, const activator, const modes_struct:m
 				
 				for(new iVictim = 1, Float:fReduceDamage, Float:vecEnd[3]; iVictim <= MaxClients; iVictim++)
 				{
-					if(!is_user_alive(iVictim) || get_member(iVictim, m_iTeam) != get_member(id, m_iTeam))
+					if(!is_user_alive(iVictim) || TeamName:get_member(iVictim, m_iTeam) != TeamName:get_member(id, m_iTeam))
 					{
 						continue;
 					}
@@ -116,7 +111,7 @@ public rt_revive_end(const iEnt, const id, const activator, const modes_struct:m
 					ExecuteHamB(Ham_TakeDamage, iVictim, iEnt, iPlanter, fReduceDamage, DMG_GRENADE | DMG_ALWAYSGIB);
 				}
 
-				UTIL_RemoveCorpses(id);
+				UTIL_RemoveCorpses(id, DEAD_BODY_CLASSNAME);
 			}
 		}
 		case MODE_PLANT:

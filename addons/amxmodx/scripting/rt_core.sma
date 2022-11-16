@@ -1,4 +1,3 @@
-#include <amxmodx>
 #include <rt_api>
 
 enum CVARS
@@ -17,7 +16,9 @@ enum Forwards
 	ReviveLoop_Pre,
 	ReviveLoop_Post,
 	ReviveEnd,
-	ReviveCancelled
+	ReviveCancelled,
+	CreatingCorpseStart,
+	CreatingCorpseEnd
 };
 
 new g_eForwards[Forwards];
@@ -25,6 +26,12 @@ new g_eForwards[Forwards];
 new g_iPluginLoaded;
 
 new Float:g_flLastUse[MAX_PLAYERS + 1], g_iTimeUntil[MAX_PLAYERS + 1];
+
+public plugin_precache()
+{
+	RegisterCvars();
+	UTIL_UploadConfigs();
+}
 
 public plugin_init()
 {
@@ -36,21 +43,16 @@ public plugin_init()
 
 	RegisterHookChain(RG_CSGameRules_CleanUpMap, "CSGameRules_CleanUpMap_Post", .post = 1);
 	RegisterHookChain(RG_CBasePlayer_UseEmpty, "CBasePlayer_UseEmpty_Pre", .post = 0);
-
-	RegisterCvars();
 	
 	g_eForwards[ReviveStart] = CreateMultiForward("rt_revive_start", ET_STOP, FP_CELL, FP_CELL, FP_CELL, FP_CELL);
 	g_eForwards[ReviveLoop_Pre] = CreateMultiForward("rt_revive_loop_pre", ET_STOP, FP_CELL, FP_CELL, FP_CELL, FP_FLOAT, FP_CELL);
 	g_eForwards[ReviveLoop_Post] = CreateMultiForward("rt_revive_loop_post", ET_IGNORE, FP_CELL, FP_CELL, FP_CELL, FP_FLOAT, FP_CELL);
 	g_eForwards[ReviveEnd] = CreateMultiForward("rt_revive_end", ET_IGNORE, FP_CELL, FP_CELL, FP_CELL, FP_CELL);
 	g_eForwards[ReviveCancelled] = CreateMultiForward("rt_revive_cancelled", ET_IGNORE, FP_CELL, FP_CELL, FP_CELL, FP_CELL);
+	g_eForwards[CreatingCorpseStart] = CreateMultiForward("rt_creating_corpse_start", ET_STOP, FP_CELL, FP_CELL);
+	g_eForwards[CreatingCorpseEnd] = CreateMultiForward("rt_creating_corpse_end", ET_IGNORE, FP_CELL, FP_CELL, FP_ARRAY);
 
 	g_iPluginLoaded = is_plugin_loaded("rt_planting.amxx", true);
-}
-
-public plugin_cfg()
-{
-	UTIL_UploadConfigs();
 }
 
 public plugin_end()
@@ -60,6 +62,8 @@ public plugin_end()
 	DestroyForward(g_eForwards[ReviveLoop_Post]);
 	DestroyForward(g_eForwards[ReviveEnd]);
 	DestroyForward(g_eForwards[ReviveCancelled]);
+	DestroyForward(g_eForwards[CreatingCorpseStart]);
+	DestroyForward(g_eForwards[CreatingCorpseEnd]);
 }
 
 public client_disconnected(id)
@@ -69,7 +73,7 @@ public client_disconnected(id)
 
 public CSGameRules_CleanUpMap_Post()
 {
-	UTIL_RemoveCorpses();
+	UTIL_RemoveCorpses(0, DEAD_BODY_CLASSNAME);
 }
 
 public CBasePlayer_UseEmpty_Pre(const iActivator)
@@ -108,7 +112,7 @@ public Corpse_Use(const iEnt, const iActivator)
 	{
 		client_print_color(iActivator, print_team_red, "%L %L", iActivator, "RT_CHAT_TAG", iActivator, "RT_DISCONNECTED");
 
-		UTIL_RemoveCorpses(iPlayer);
+		UTIL_RemoveCorpses(iPlayer, DEAD_BODY_CLASSNAME);
 
 		return;
 	}
@@ -199,7 +203,7 @@ public Corpse_Think(const iEnt)
 	
 	if(g_eCvars[CORPSE_TIME] && !iActivator && get_entvar(iEnt, var_fuser4) < flGameTime)
 	{
-		UTIL_RemoveCorpses(iPlayer);
+		UTIL_RemoveCorpses(iPlayer, DEAD_BODY_CLASSNAME);
 
 		return;
 	}
@@ -209,7 +213,7 @@ public Corpse_Think(const iEnt)
 		client_print_color(iActivator, print_team_red, "%L %L", iActivator, "RT_CHAT_TAG", iActivator, "RT_DISCONNECTED");
 
 		UTIL_ResetEntityThink(g_eForwards[ReviveCancelled], iEnt, iPlayer, iActivator, eCurrentMode);
-		UTIL_RemoveCorpses(iPlayer);
+		UTIL_RemoveCorpses(iPlayer, DEAD_BODY_CLASSNAME);
 
 		return;
 	}
@@ -262,7 +266,7 @@ public Corpse_Think(const iEnt)
 			engfunc(EngFunc_SetSize, iPlayer, Float:{-16.000000, -16.000000, -18.000000}, Float:{16.000000, 16.000000, 32.000000});
 			engfunc(EngFunc_SetOrigin, iPlayer, fOrigin);
 			
-			UTIL_RemoveCorpses(iPlayer);
+			UTIL_RemoveCorpses(iPlayer, DEAD_BODY_CLASSNAME);
 		}
 
 		ExecuteForward(g_eForwards[ReviveEnd], _, iEnt, iPlayer, iActivator, eCurrentMode);
@@ -293,7 +297,14 @@ public MessageHook_ClCorpse()
 
 	new iPlayer = get_msg_arg_int(arg_id);
 
-	if(!is_user_connected(iPlayer) || is_user_alive(iPlayer) || TeamName:get_member(iPlayer, m_iTeam) == TEAM_SPECTATOR)
+	if(!is_user_connected(iPlayer) || is_user_alive(iPlayer))
+	{
+		return PLUGIN_HANDLED;
+	}
+
+	new TeamName:iPlTeam = get_member(iPlayer, m_iTeam)
+
+	if(iPlTeam == TEAM_SPECTATOR)
 	{
 		return PLUGIN_HANDLED;
 	}
@@ -302,7 +313,19 @@ public MessageHook_ClCorpse()
 
 	if(is_nullent(iEnt))
 	{
-		return PLUGIN_CONTINUE;
+		return PLUGIN_HANDLED;
+	}
+
+	new fwRet;
+
+	ExecuteForward(g_eForwards[CreatingCorpseStart], fwRet, iEnt, iPlayer);
+
+	if(fwRet == PLUGIN_HANDLED)
+	{
+		set_entvar(iEnt, var_flags, FL_KILLME);
+		set_entvar(iEnt, var_nextthink, -1.0);
+
+		return PLUGIN_HANDLED;
 	}
 
 	new szTemp[MAX_RESOURCE_PATH_LENGTH], szModel[MAX_RESOURCE_PATH_LENGTH];
@@ -317,7 +340,7 @@ public MessageHook_ClCorpse()
 	set_entvar(iEnt, var_frame, 255.0);
 	set_entvar(iEnt, var_skin, get_entvar(iPlayer, var_skin));
 	set_entvar(iEnt, var_owner, iPlayer);
-	set_entvar(iEnt, var_team, TeamName:get_member(iPlayer, m_iTeam));
+	set_entvar(iEnt, var_team, iPlTeam);
 
 	new Float:fOrigin[3];
 	get_entvar(iPlayer, var_origin, fOrigin);
@@ -338,6 +361,17 @@ public MessageHook_ClCorpse()
 	{
 		set_entvar(iEnt, var_fuser4, get_gametime() + g_eCvars[CORPSE_TIME]);
 	}
+
+	new szOriginData[3];
+
+	for(new i; i < 3; i++)
+	{
+		szOriginData[i] = floatround(fOrigin[i]);
+	}
+
+	szOriginData[2] += 20;
+
+	ExecuteForward(g_eForwards[CreatingCorpseEnd], _, iEnt, iPlayer, PrepareArray(szOriginData, sizeof(szOriginData)));
 
 	return PLUGIN_HANDLED;
 }

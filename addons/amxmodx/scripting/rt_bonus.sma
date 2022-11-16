@@ -1,4 +1,3 @@
-#include <amxmodx>
 #include <rt_api>
 
 #define MAX_SPAWN_WEAPONS 6
@@ -21,26 +20,26 @@ new g_eCvars[CVARS];
 new g_iWeapons;
 new g_szWeapon[MAX_SPAWN_WEAPONS][32];
 
+public plugin_precache()
+{
+	RegisterCvars();
+	UTIL_UploadConfigs();
+}
+
 public plugin_init()
 {
 	register_plugin("Revive Teammates: Bonus", VERSION, AUTHORS);
 	
 	register_dictionary("rt_library.txt");
-
-	RegisterCvars();
 }
 
 public plugin_cfg()
 {
-	UTIL_UploadConfigs();
-
-	new szMapName[32];
+	new szMapName[32], szWeapon[32];
 	get_mapname(szMapName, charsmax(szMapName));
 	
-	if(g_eCvars[WEAPONS_MAPS] && containi(szMapName, "awp_") != -1)
+	if(g_eCvars[WEAPONS_MAPS][0] != EOS && containi(szMapName, "awp_") != -1)
 	{
-		new szWeapon[32];
-				
 		while(argbreak(g_eCvars[WEAPONS_MAPS], szWeapon, charsmax(szWeapon), g_eCvars[WEAPONS_MAPS], charsmax(g_eCvars[WEAPONS_MAPS])) != -1)
 		{
 			if(g_iWeapons == MAX_SPAWN_WEAPONS)
@@ -56,8 +55,6 @@ public plugin_cfg()
 
 	if(g_eCvars[WEAPONS][0] != EOS)
 	{
-		new szWeapon[32];
-				
 		while(argbreak(g_eCvars[WEAPONS], szWeapon, charsmax(szWeapon), g_eCvars[WEAPONS], charsmax(g_eCvars[WEAPONS])) != -1)
 		{
 			if(g_iWeapons == MAX_SPAWN_WEAPONS)
@@ -87,11 +84,10 @@ public rt_revive_end(const iEnt, const id, const activator, const modes_struct:m
 
 				if(g_eCvars[HEALTH])
 				{
-					set_entvar(id, var_health, g_eCvars[HEALTH]);
-					set_entvar(id, var_max_health, g_eCvars[HEALTH]);
+					set_entvar(id, var_health, floatclamp(g_eCvars[HEALTH], 1.0, Float:get_entvar(id, var_max_health)));
 				}
 
-				if(g_eCvars[ARMOR] > 0)
+				if(g_eCvars[ARMOR])
 				{
 					rg_set_user_armor(id, g_eCvars[ARMOR], ArmorType:g_eCvars[ARMOR_TYPE]);
 				}
@@ -199,7 +195,7 @@ public RegisterCvars()
 		FCVAR_NONE,
 		"Number of armor of the resurrected player",
 		true,
-		1.0),
+		0.0),
 		g_eCvars[ARMOR]
 	);
 	bind_pcvar_num(create_cvar(

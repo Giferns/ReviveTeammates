@@ -1,4 +1,3 @@
-#include <amxmodx>
 #include <rt_api>
 
 #define MAX_SOUNDS_PER_SECTION 10
@@ -45,15 +44,8 @@ public plugin_precache()
 	INI_SetReaders(iParser, "ReadValues", "ReadNewSection");
 	INI_ParseFile(iParser, szFile);
 	INI_DestroyParser(iParser);
-}
 
-public plugin_init()
-{
 	RegisterCvars();
-}
-
-public plugin_cfg()
-{
 	UTIL_UploadConfigs();
 }
 

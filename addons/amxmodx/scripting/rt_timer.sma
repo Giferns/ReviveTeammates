@@ -1,4 +1,3 @@
-#include <amxmodx>
 #include <rt_api>
 
 enum CVARS
@@ -27,13 +26,17 @@ new g_iHudSyncObj;
 
 new g_szTimer[MAX_PLAYERS + 1][64];
 
+public plugin_precache()
+{
+	RegisterCvars();
+	UTIL_UploadConfigs();
+}
+
 public plugin_init()
 {
 	register_plugin("Revive Teammates: Timer", VERSION, AUTHORS);
 
 	register_dictionary("rt_library.txt");
-
-	RegisterCvars();
 	
 	if(g_eCvars[TIMER_TYPE] == 0)
 	{
@@ -43,8 +46,6 @@ public plugin_init()
 
 public plugin_cfg()
 {
-	UTIL_UploadConfigs();
-
 	g_eTimeData[GLOBAL_TIME] = get_pcvar_float(get_cvar_pointer("rt_revive_time"));
 	g_eTimeData[CEIL_TIME] = floatround(g_eTimeData[GLOBAL_TIME], floatround_ceil);
 	g_eTimeData[START_TIME] = floatround((1.0 - g_eTimeData[GLOBAL_TIME] / g_eTimeData[CEIL_TIME]) * 100);
@@ -99,9 +100,10 @@ public rt_revive_cancelled(const iEnt, const id, const activator, const modes_st
 		}
 		case 1:
 		{
+			rg_send_bartime(activator, 0);
+			
 			if(mode == MODE_REVIVE)
 			{
-				rg_send_bartime(activator, 0);
 				rg_send_bartime(id, 0);
 			}
 		}

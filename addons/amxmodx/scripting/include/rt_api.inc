@@ -7,12 +7,13 @@
 #endif
 #define _rt_api_included
 
+#include <amxmodx>
 #include <engine>
 #include <fakemeta>
 #include <hamsandwich>
 #include <reapi>
 
-#define VERSION "0.9.0"
+#define VERSION "0.10.0"
 #define AUTHORS "ufame & Albertio"
 
 enum modes_struct
@@ -87,14 +88,33 @@ forward rt_revive_end(const iEnt, const id, const activator, const modes_struct:
 */
 forward rt_revive_cancelled(const iEnt, const id, const activator, const modes_struct:mode);
 
+/**
+* Called before a corpse is created
+*
+* @param iEnt  corpse entity index
+* @param id    id of the player whose corpse
+*
+*/
+forward rt_creating_corpse_start(const iEnt, const id);
+
+/**
+* Called after the creation of the corpse is completed
+*
+* @param iEnt    corpse entity index
+* @param id      id of the player whose corpse
+* @param origin  coordinates of the corpse
+*
+*/
+forward rt_creating_corpse_end(const iEnt, const id, const origin[3]);
+
 /*
 * Removal of corpses
 */
-stock UTIL_RemoveCorpses(const id = 0)
+stock UTIL_RemoveCorpses(const id = 0, const szClassName[] = DEAD_BODY_CLASSNAME)
 {
 	new iEnt = NULLENT;
 
-	while((iEnt = rg_find_ent_by_class(iEnt, DEAD_BODY_CLASSNAME)) > 0)
+	while((iEnt = rg_find_ent_by_class(iEnt, szClassName)) > 0)
 	{
 		if(id && get_entvar(iEnt, var_owner) != id)
 		{
