@@ -61,6 +61,16 @@ public plugin_cfg()
 	g_fTime = get_pcvar_float(get_cvar_pointer("rt_revive_time"));
 }
 
+public client_putinserver(id)
+{
+	if(is_user_bot(id) || is_user_hltv(id))
+	{
+		return;
+	}
+
+	set_entvar(id, var_groupinfo, get_entvar(id, var_groupinfo) | MaskEnt(1));
+}
+
 public ChangeTeam()
 {
 	if(g_eCvars[CORPSE_SPRITE][0] != EOS)
@@ -79,12 +89,16 @@ public ChangeTeam()
 			case 'T':
 			{
 				set_entvar(id, var_groupinfo, get_entvar(id, var_groupinfo) & ~MaskEnt(3));
-				set_entvar(id, var_groupinfo, get_entvar(id, var_groupinfo) | (MaskEnt(1) | MaskEnt(2)));
+				set_entvar(id, var_groupinfo, get_entvar(id, var_groupinfo) | MaskEnt(2));
 			}
 			case 'C':
 			{
 				set_entvar(id, var_groupinfo, get_entvar(id, var_groupinfo) & ~MaskEnt(2));
-				set_entvar(id, var_groupinfo, get_entvar(id, var_groupinfo) | (MaskEnt(1) | MaskEnt(3)));
+				set_entvar(id, var_groupinfo, get_entvar(id, var_groupinfo) | MaskEnt(3));
+			}
+			case 'S':
+			{
+				set_entvar(id, var_groupinfo, get_entvar(id, var_groupinfo) & ~(MaskEnt(2) | MaskEnt(3)))
 			}
 		}
 	}
