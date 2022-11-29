@@ -108,7 +108,7 @@ public Corpse_Use(const iEnt, const iActivator)
 
 	new iPlayer = get_entvar(iEnt, var_owner);
 
-	if(!is_user_connected(iPlayer) || is_user_alive(iPlayer))
+	if(is_user_alive(iPlayer))
 	{
 		client_print_color(iActivator, print_team_red, "%L %L", iActivator, "RT_CHAT_TAG", iActivator, "RT_DISCONNECTED");
 
@@ -144,9 +144,16 @@ public Corpse_Use(const iEnt, const iActivator)
 		return;
 	}
 
+	if(!is_user_alive(iActivator))
+	{
+		UTIL_ResetEntityThink(g_eForwards[ReviveCancelled], iEnt, iPlayer, iActivator, eCurrentMode);
+
+		return;
+	}
+
 	new fwRet;
 
-	ExecuteForward(g_eForwards[ReviveStart], fwRet, iEnt, iPlayer, iActivator, eCurrentMode);
+	ExecuteForward(g_eForwards[ReviveStart], fwRet, iEnt, UTIL_IsUserConnected(iPlayer), UTIL_IsUserConnected(iActivator), eCurrentMode);
 
 	if(fwRet == PLUGIN_HANDLED)
 	{
@@ -208,7 +215,7 @@ public Corpse_Think(const iEnt)
 		return;
 	}
 
-	if(!is_user_connected(iPlayer) || is_user_alive(iPlayer))
+	if(is_user_alive(iPlayer))
 	{
 		client_print_color(iActivator, print_team_red, "%L %L", iActivator, "RT_CHAT_TAG", iActivator, "RT_DISCONNECTED");
 
@@ -236,9 +243,18 @@ public Corpse_Think(const iEnt)
 
 	if(g_iTimeUntil[iActivator] == 10)
 	{
+		flTimeUntil[1] -= 1.0;
+
+		if(!is_user_alive(iActivator))
+		{
+			UTIL_ResetEntityThink(g_eForwards[ReviveCancelled], iEnt, iPlayer, iActivator, eCurrentMode);
+
+			return;
+		}
+
 		new fwRet;
 
-		ExecuteForward(g_eForwards[ReviveLoop_Pre], fwRet, iEnt, iPlayer, iActivator, flTimeUntil[1], eCurrentMode);
+		ExecuteForward(g_eForwards[ReviveLoop_Pre], fwRet, iEnt, UTIL_IsUserConnected(iPlayer), UTIL_IsUserConnected(iActivator), flTimeUntil[1], eCurrentMode);
 
 		if(fwRet == PLUGIN_HANDLED)
 		{
@@ -269,16 +285,29 @@ public Corpse_Think(const iEnt)
 			UTIL_RemoveCorpses(iPlayer, DEAD_BODY_CLASSNAME);
 		}
 
-		ExecuteForward(g_eForwards[ReviveEnd], _, iEnt, iPlayer, iActivator, eCurrentMode);
+		if(!is_user_alive(iActivator))
+		{
+			UTIL_ResetEntityThink(g_eForwards[ReviveCancelled], iEnt, iPlayer, iActivator, eCurrentMode);
+
+			return;
+		}
+
+		ExecuteForward(g_eForwards[ReviveEnd], _, iEnt, UTIL_IsUserConnected(iPlayer), UTIL_IsUserConnected(iActivator), eCurrentMode);
 
 		return;
 	}
 	
 	if(g_iTimeUntil[iActivator] == 10)
 	{
-		ExecuteForward(g_eForwards[ReviveLoop_Post], _, iEnt, iPlayer, iActivator, flTimeUntil[1], eCurrentMode);
+		if(!is_user_alive(iActivator))
+		{
+			UTIL_ResetEntityThink(g_eForwards[ReviveCancelled], iEnt, iPlayer, iActivator, eCurrentMode);
 
-		flTimeUntil[1] -= 1.0;
+			return;
+		}
+		
+		ExecuteForward(g_eForwards[ReviveLoop_Post], _, iEnt, UTIL_IsUserConnected(iPlayer), UTIL_IsUserConnected(iActivator), flTimeUntil[1], eCurrentMode);
+
 		g_iTimeUntil[iActivator] = 0;
 	}
 	
@@ -297,7 +326,7 @@ public MessageHook_ClCorpse()
 
 	new iPlayer = get_msg_arg_int(arg_id);
 
-	if(!is_user_connected(iPlayer) || is_user_alive(iPlayer))
+	if(is_user_alive(iPlayer))
 	{
 		return PLUGIN_HANDLED;
 	}

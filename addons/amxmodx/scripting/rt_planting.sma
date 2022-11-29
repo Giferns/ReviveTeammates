@@ -56,6 +56,11 @@ public client_disconnected(id)
 
 public rt_revive_start(const iEnt, const id, const activator, const modes_struct:mode)
 {
+	if(id == NULLENT || activator == NULLENT)
+	{
+		return PLUGIN_HANDLED;
+	}
+
 	new modes_struct:iMode = get_entvar(iEnt, var_iuser3);
 	
 	if(mode == MODE_PLANT)
@@ -78,6 +83,11 @@ public rt_revive_start(const iEnt, const id, const activator, const modes_struct
 
 public rt_revive_end(const iEnt, const id, const activator, const modes_struct:mode)
 {
+	if(id == NULLENT || activator == NULLENT)
+	{
+		return;
+	}
+
 	switch(mode)
 	{
 		case MODE_REVIVE:

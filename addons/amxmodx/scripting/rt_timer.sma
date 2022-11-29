@@ -53,6 +53,11 @@ public plugin_cfg()
 
 public rt_revive_start(const iEnt, const id, const activator, const modes_struct:mode)
 {
+	if(id == NULLENT || activator == NULLENT)
+	{
+		return PLUGIN_HANDLED;
+	}
+
 	switch(g_eCvars[TIMER_TYPE])
 	{
 		case 0:
@@ -78,10 +83,17 @@ public rt_revive_start(const iEnt, const id, const activator, const modes_struct
 			}
 		}
 	}
+
+	return PLUGIN_CONTINUE;
 }
 
 public rt_revive_loop_post(const iEnt, const id, const activator, const Float:timer, modes_struct:mode)
 {
+	if(id == NULLENT || activator == NULLENT)
+	{
+		return;
+	}
+
 	if(g_eCvars[TIMER_TYPE] == 0)
 	{
 		replace(g_szTimer[id], charsmax(g_szTimer[]), TIMER_REPLACE_SYMB, TIMER_REPLACE_WITH);
@@ -92,6 +104,11 @@ public rt_revive_loop_post(const iEnt, const id, const activator, const Float:ti
 
 public rt_revive_cancelled(const iEnt, const id, const activator, const modes_struct:mode)
 {
+	if(id == NULLENT || activator == NULLENT)
+	{
+		return;
+	}
+
 	switch(g_eCvars[TIMER_TYPE])
 	{
 		case 0:

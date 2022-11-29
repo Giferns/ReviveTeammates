@@ -51,6 +51,11 @@ public plugin_precache()
 
 public rt_revive_start(const iEnt, const id, const activator, const modes_struct:mode)
 {
+	if(id == NULLENT || activator == NULLENT)
+	{
+		return PLUGIN_HANDLED;
+	}
+	
 	switch(mode)
 	{
 		case MODE_REVIVE:
@@ -59,11 +64,12 @@ public rt_revive_start(const iEnt, const id, const activator, const modes_struct
 			{
 				if(g_eCvars[NEARBY_PLAYERS] == 2)
 				{
-					PlaybackSoundNearbyPlayers(id, g_szSounds[SECTION_REVIVE_START][random(g_iSounds[SECTION_REVIVE_START])]);
+					PlaybackSoundNearbyPlayers(iEnt, g_szSounds[SECTION_REVIVE_START][random(g_iSounds[SECTION_REVIVE_START])]);
 				}
-				else
+				else if(!g_eCvars[NEARBY_PLAYERS])
 				{
 					rg_send_audio(activator, g_szSounds[SECTION_REVIVE_START][random(g_iSounds[SECTION_REVIVE_START])]);
+					rg_send_audio(id, g_szSounds[SECTION_REVIVE_START][random(g_iSounds[SECTION_REVIVE_START])]);
 				}
 			}
 		}
@@ -73,19 +79,27 @@ public rt_revive_start(const iEnt, const id, const activator, const modes_struct
 			{
 				if(g_eCvars[NEARBY_PLAYERS] == 2)
 				{
-					PlaybackSoundNearbyPlayers(id, g_szSounds[SECTION_PLANT_START][random(g_iSounds[SECTION_PLANT_START])]);
+					PlaybackSoundNearbyPlayers(iEnt, g_szSounds[SECTION_PLANT_START][random(g_iSounds[SECTION_PLANT_START])]);
 				}
-				else
+				else if(!g_eCvars[NEARBY_PLAYERS])
 				{
 					rg_send_audio(activator, g_szSounds[SECTION_PLANT_START][random(g_iSounds[SECTION_PLANT_START])]);
+					rg_send_audio(id, g_szSounds[SECTION_PLANT_START][random(g_iSounds[SECTION_PLANT_START])]);
 				}
 			}
 		}
 	}
+
+	return PLUGIN_CONTINUE;
 }
 
 public rt_revive_loop_post(const iEnt, const id, const activator, const Float:timer, modes_struct:mode)
 {
+	if(id == NULLENT || activator == NULLENT)
+	{
+		return;
+	}
+
 	switch(mode)
 	{
 		case MODE_REVIVE:
@@ -94,11 +108,12 @@ public rt_revive_loop_post(const iEnt, const id, const activator, const Float:ti
 			{
 				if(g_eCvars[NEARBY_PLAYERS] == 2)
 				{
-					PlaybackSoundNearbyPlayers(id, g_szSounds[SECTION_REVIVE_LOOP][random(g_iSounds[SECTION_REVIVE_LOOP])]);
+					PlaybackSoundNearbyPlayers(iEnt, g_szSounds[SECTION_REVIVE_LOOP][random(g_iSounds[SECTION_REVIVE_LOOP])]);
 				}
-				else
+				else if(!g_eCvars[NEARBY_PLAYERS])
 				{
 					rg_send_audio(activator, g_szSounds[SECTION_REVIVE_LOOP][random(g_iSounds[SECTION_REVIVE_LOOP])]);
+					rg_send_audio(id, g_szSounds[SECTION_REVIVE_LOOP][random(g_iSounds[SECTION_REVIVE_LOOP])]);
 				}
 			}
 		}
@@ -108,11 +123,12 @@ public rt_revive_loop_post(const iEnt, const id, const activator, const Float:ti
 			{
 				if(g_eCvars[NEARBY_PLAYERS] == 2)
 				{
-					PlaybackSoundNearbyPlayers(id, g_szSounds[SECTION_PLANT_LOOP][random(g_iSounds[SECTION_PLANT_LOOP])]);
+					PlaybackSoundNearbyPlayers(iEnt, g_szSounds[SECTION_PLANT_LOOP][random(g_iSounds[SECTION_PLANT_LOOP])]);
 				}
-				else
+				else if(!g_eCvars[NEARBY_PLAYERS])
 				{
 					rg_send_audio(activator, g_szSounds[SECTION_PLANT_LOOP][random(g_iSounds[SECTION_PLANT_LOOP])]);
+					rg_send_audio(id, g_szSounds[SECTION_PLANT_LOOP][random(g_iSounds[SECTION_PLANT_LOOP])]);
 				}
 			}
 		}
@@ -121,6 +137,11 @@ public rt_revive_loop_post(const iEnt, const id, const activator, const Float:ti
 
 public rt_revive_end(const iEnt, const id, const activator, const modes_struct:mode)
 {
+	if(id == NULLENT || activator == NULLENT)
+	{
+		return;
+	}
+
 	switch(mode)
 	{
 		case MODE_REVIVE:
@@ -131,11 +152,12 @@ public rt_revive_end(const iEnt, const id, const activator, const modes_struct:m
 			{
 				if(g_eCvars[NEARBY_PLAYERS])
 				{
-					PlaybackSoundNearbyPlayers(id, g_szSounds[SECTION_REVIVE_END][random(g_iSounds[SECTION_REVIVE_END])]);
+					PlaybackSoundNearbyPlayers(iEnt, g_szSounds[SECTION_REVIVE_END][random(g_iSounds[SECTION_REVIVE_END])]);
 				}
 				else
 				{
 					rg_send_audio(activator, g_szSounds[SECTION_REVIVE_END][random(g_iSounds[SECTION_REVIVE_END])]);
+					rg_send_audio(id, g_szSounds[SECTION_REVIVE_END][random(g_iSounds[SECTION_REVIVE_END])]);
 				}
 			}
 		}
@@ -145,11 +167,12 @@ public rt_revive_end(const iEnt, const id, const activator, const modes_struct:m
 			{
 				if(g_eCvars[NEARBY_PLAYERS])
 				{
-					PlaybackSoundNearbyPlayers(id, g_szSounds[SECTION_PLANT_END][random(g_iSounds[SECTION_PLANT_END])]);
+					PlaybackSoundNearbyPlayers(iEnt, g_szSounds[SECTION_PLANT_END][random(g_iSounds[SECTION_PLANT_END])]);
 				}
 				else
 				{
 					rg_send_audio(activator, g_szSounds[SECTION_PLANT_END][random(g_iSounds[SECTION_PLANT_END])]);
+					rg_send_audio(id, g_szSounds[SECTION_PLANT_END][random(g_iSounds[SECTION_PLANT_END])]);
 				}
 			}
 		}
@@ -214,15 +237,15 @@ public ReadValues(INIParser:iParser, const szKey[], const szValue[])
 
 stock PlaybackSoundNearbyPlayers(const id, szSound[])
 {
-	new iPlayer = NULLENT, Float:vOrigin[3];
+	new iEnt = NULLENT, Float:vOrigin[3];
 	
 	get_entvar(id, var_origin, vOrigin);
 	
-	while((iPlayer = find_ent_in_sphere(iPlayer, vOrigin, g_eCvars[SOUND_RADIUS])) != 0)
+	while((iEnt = find_ent_in_sphere(iEnt, vOrigin, g_eCvars[SOUND_RADIUS])) > 0)
 	{
-		if(ExecuteHam(Ham_IsPlayer, iPlayer))
+		if(ExecuteHam(Ham_IsPlayer, iEnt))
 		{
-			rg_send_audio(iPlayer, szSound);
+			rg_send_audio(iEnt, szSound);
 		}
 	}
 }

@@ -69,6 +69,11 @@ public plugin_cfg()
 
 public rt_revive_end(const iEnt, const id, const activator, const modes_struct:mode)
 {
+	if(id == NULLENT || activator == NULLENT)
+	{
+		return;
+	}
+
 	switch(mode)
 	{
 		case MODE_REVIVE:

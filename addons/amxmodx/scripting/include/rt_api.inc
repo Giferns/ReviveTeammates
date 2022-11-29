@@ -13,7 +13,7 @@
 #include <hamsandwich>
 #include <reapi>
 
-#define VERSION "0.10.1"
+#define VERSION "0.11.0"
 #define AUTHORS "ufame & Albertio"
 
 enum modes_struct
@@ -134,7 +134,15 @@ stock UTIL_ResetEntityThink(const eForward, const iEnt, const id, const activato
 	set_entvar(iEnt, var_iuser1, 0);
 	set_entvar(iEnt, var_nextthink, 0.0);
 
-	ExecuteForward(eForward, _, iEnt, id, activator, mode);
+	ExecuteForward(eForward, _, iEnt, UTIL_IsUserConnected(id), UTIL_IsUserConnected(activator), mode);
+}
+
+/*
+* Checking whether the player is connected
+*/
+stock UTIL_IsUserConnected(const id)
+{
+	return (is_user_connected(id) ? id : NULLENT);
 }
 
 /*

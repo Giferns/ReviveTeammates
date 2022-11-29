@@ -80,6 +80,11 @@ public CBasePlayer_ResetMaxSpeed_Post(const iActivator)
 
 public rt_revive_start(const iEnt, const id, const activator, const modes_struct:mode)
 {
+	if(id == NULLENT || activator == NULLENT)
+	{
+		return PLUGIN_HANDLED;
+	}
+	
 	if((get_user_flags(activator) & g_iAccessFlags) != g_iAccessFlags)
 	{
 		client_print_color(activator, print_team_red, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_NO_ACCESS");
@@ -171,6 +176,11 @@ public rt_revive_start(const iEnt, const id, const activator, const modes_struct
 
 public rt_revive_loop_pre(const iEnt, const id, const activator, const Float:timer, modes_struct:mode)
 {
+	if(id == NULLENT || activator == NULLENT)
+	{
+		return PLUGIN_HANDLED;
+	}
+
 	if(g_eCvars[BOMB] && rg_is_bomb_planted())
 	{
 		client_print_color(activator, print_team_red, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_BOMB");
@@ -213,6 +223,11 @@ public rt_revive_loop_pre(const iEnt, const id, const activator, const Float:tim
 
 public rt_revive_cancelled(const iEnt, const id, const activator, const modes_struct:mode)
 {
+	if(id == NULLENT || activator == NULLENT)
+	{
+		return;
+	}
+
 	if(g_eCvars[NO_MOVE] == 1)
 	{
 		set_entvar(activator, var_iuser3, get_entvar(activator, var_iuser3) & ~g_iPreventFlags);
@@ -227,6 +242,11 @@ public rt_revive_cancelled(const iEnt, const id, const activator, const modes_st
 
 public rt_revive_end(const iEnt, const id, const activator, const modes_struct:mode)
 {
+	if(id == NULLENT || activator == NULLENT)
+	{
+		return;
+	}
+
 	switch(mode)
 	{
 		case MODE_REVIVE:

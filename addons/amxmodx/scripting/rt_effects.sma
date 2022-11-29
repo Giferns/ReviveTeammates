@@ -1,7 +1,5 @@
 #include <rt_api>
 
-#define MaskEnt(%0) (1<<((%0) & 31))
-
 enum CVARS
 {
 	SPECTATOR,
@@ -43,7 +41,7 @@ public plugin_init()
 
 	register_dictionary("rt_library.txt");
 
-	register_event("TeamInfo", "ChangeTeam", "a");
+	register_forward(FM_AddToFullPack, "AddToFullPack_Post", true);
 }
 
 public plugin_cfg()
@@ -61,51 +59,28 @@ public plugin_cfg()
 	g_fTime = get_pcvar_float(get_cvar_pointer("rt_revive_time"));
 }
 
-public client_putinserver(id)
+public AddToFullPack_Post(es, e, ent, host, flags, player, pSet)
 {
-	if(is_user_bot(id) || is_user_hltv(id))
+	if(g_eCvars[CORPSE_SPRITE][0] == EOS || player || !FClassnameIs(ent, CORPSE_SPRITE_CLASSNAME))
 	{
-		return;
+		return FMRES_IGNORED;
 	}
 
-	set_entvar(id, var_groupinfo, get_entvar(id, var_groupinfo) | MaskEnt(1));
-}
-
-public ChangeTeam()
-{
-	if(g_eCvars[CORPSE_SPRITE][0] != EOS)
+	if(TeamName:get_entvar(ent, var_team) != TeamName:get_member(host, m_iTeam))
 	{
-		new id = read_data(1), szNewTeam[2];
-
-		if(is_user_bot(id))
-		{
-			return;
-		}
-
-		read_data(2, szNewTeam, charsmax(szNewTeam));
-
-		switch(szNewTeam[0])
-		{
-			case 'T':
-			{
-				set_entvar(id, var_groupinfo, get_entvar(id, var_groupinfo) & ~MaskEnt(3));
-				set_entvar(id, var_groupinfo, get_entvar(id, var_groupinfo) | MaskEnt(2));
-			}
-			case 'C':
-			{
-				set_entvar(id, var_groupinfo, get_entvar(id, var_groupinfo) & ~MaskEnt(2));
-				set_entvar(id, var_groupinfo, get_entvar(id, var_groupinfo) | MaskEnt(3));
-			}
-			case 'S':
-			{
-				set_entvar(id, var_groupinfo, get_entvar(id, var_groupinfo) & ~(MaskEnt(2) | MaskEnt(3)))
-			}
-		}
+		set_es(es, ES_Effects, EF_NODRAW);
 	}
+
+	return FMRES_IGNORED;
 }
 
 public rt_revive_start(const iEnt, const id, const activator, const modes_struct:mode)
 {
+	if(id == NULLENT || activator == NULLENT)
+	{
+		return PLUGIN_HANDLED;
+	}
+
 	switch(mode)
 	{
 		case MODE_REVIVE:
@@ -142,10 +117,17 @@ public rt_revive_start(const iEnt, const id, const activator, const modes_struct
 			}
 		}
 	}
+
+	return PLUGIN_CONTINUE;
 }
 
 public rt_revive_cancelled(const iEnt, const id, const activator, const modes_struct:mode)
 {
+	if(id == NULLENT || activator == NULLENT)
+	{
+		return;
+	}
+	
 	switch(mode)
 	{
 		case MODE_REVIVE:
@@ -173,6 +155,11 @@ public rt_revive_cancelled(const iEnt, const id, const activator, const modes_st
 
 public rt_revive_end(const iEnt, const id, const activator, const modes_struct:mode)
 {
+	if(id == NULLENT || activator == NULLENT)
+	{
+		return;
+	}
+
 	switch(mode)
 	{
 		case MODE_REVIVE:
@@ -224,19 +211,8 @@ public rt_creating_corpse_end(const iEnt, const id, const origin[3])
 		set_entvar(iEntSprite, var_classname, CORPSE_SPRITE_CLASSNAME);
 		set_entvar(iEntSprite, var_owner, id);
 		set_entvar(iEntSprite, var_iuser1, iEnt);
+		set_entvar(iEntSprite, var_team, TeamName:get_entvar(iEnt, var_team));
 		set_entvar(iEntSprite, var_scale, g_eCvars[SPRITE_SCALE]);
-
-		switch(TeamName:get_entvar(iEnt, var_team))
-		{
-			case TEAM_TERRORIST:
-			{
-				set_entvar(iEntSprite, var_groupinfo, get_entvar(iEntSprite, var_groupinfo) | MaskEnt(2));
-			}
-			case TEAM_CT:
-			{
-				set_entvar(iEntSprite, var_groupinfo, get_entvar(iEntSprite, var_groupinfo) | MaskEnt(3));
-			}
-		}
 
 		rg_set_rendering(iEntSprite, kRenderFxNone, Float:{255.0, 255.0, 255.0}, kRenderTransAlpha, 255.0);
 
