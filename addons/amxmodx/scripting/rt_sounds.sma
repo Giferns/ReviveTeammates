@@ -46,16 +46,11 @@ public plugin_precache()
 	INI_DestroyParser(iParser);
 
 	RegisterCvars();
-	UTIL_UploadConfigs();
+	UploadConfigs();
 }
 
 public rt_revive_start(const iEnt, const id, const activator, const modes_struct:mode)
 {
-	if(id == NULLENT || activator == NULLENT)
-	{
-		return PLUGIN_HANDLED;
-	}
-	
 	switch(mode)
 	{
 		case MODE_REVIVE:
@@ -63,9 +58,7 @@ public rt_revive_start(const iEnt, const id, const activator, const modes_struct
 			if(g_iSounds[SECTION_REVIVE_START])
 			{
 				if(g_eCvars[NEARBY_PLAYERS] == 2)
-				{
 					PlaybackSoundNearbyPlayers(iEnt, g_szSounds[SECTION_REVIVE_START][random(g_iSounds[SECTION_REVIVE_START])]);
-				}
 				else if(!g_eCvars[NEARBY_PLAYERS])
 				{
 					rg_send_audio(activator, g_szSounds[SECTION_REVIVE_START][random(g_iSounds[SECTION_REVIVE_START])]);
@@ -78,9 +71,7 @@ public rt_revive_start(const iEnt, const id, const activator, const modes_struct
 			if(g_iSounds[SECTION_PLANT_START])
 			{
 				if(g_eCvars[NEARBY_PLAYERS] == 2)
-				{
 					PlaybackSoundNearbyPlayers(iEnt, g_szSounds[SECTION_PLANT_START][random(g_iSounds[SECTION_PLANT_START])]);
-				}
 				else if(!g_eCvars[NEARBY_PLAYERS])
 				{
 					rg_send_audio(activator, g_szSounds[SECTION_PLANT_START][random(g_iSounds[SECTION_PLANT_START])]);
@@ -95,11 +86,6 @@ public rt_revive_start(const iEnt, const id, const activator, const modes_struct
 
 public rt_revive_loop_post(const iEnt, const id, const activator, const Float:timer, modes_struct:mode)
 {
-	if(id == NULLENT || activator == NULLENT)
-	{
-		return;
-	}
-
 	switch(mode)
 	{
 		case MODE_REVIVE:
@@ -107,9 +93,7 @@ public rt_revive_loop_post(const iEnt, const id, const activator, const Float:ti
 			if(g_iSounds[SECTION_REVIVE_LOOP])
 			{
 				if(g_eCvars[NEARBY_PLAYERS] == 2)
-				{
 					PlaybackSoundNearbyPlayers(iEnt, g_szSounds[SECTION_REVIVE_LOOP][random(g_iSounds[SECTION_REVIVE_LOOP])]);
-				}
 				else if(!g_eCvars[NEARBY_PLAYERS])
 				{
 					rg_send_audio(activator, g_szSounds[SECTION_REVIVE_LOOP][random(g_iSounds[SECTION_REVIVE_LOOP])]);
@@ -122,9 +106,7 @@ public rt_revive_loop_post(const iEnt, const id, const activator, const Float:ti
 			if(g_iSounds[SECTION_PLANT_LOOP])
 			{
 				if(g_eCvars[NEARBY_PLAYERS] == 2)
-				{
 					PlaybackSoundNearbyPlayers(iEnt, g_szSounds[SECTION_PLANT_LOOP][random(g_iSounds[SECTION_PLANT_LOOP])]);
-				}
 				else if(!g_eCvars[NEARBY_PLAYERS])
 				{
 					rg_send_audio(activator, g_szSounds[SECTION_PLANT_LOOP][random(g_iSounds[SECTION_PLANT_LOOP])]);
@@ -137,23 +119,17 @@ public rt_revive_loop_post(const iEnt, const id, const activator, const Float:ti
 
 public rt_revive_end(const iEnt, const id, const activator, const modes_struct:mode)
 {
-	if(id == NULLENT || activator == NULLENT)
-	{
-		return;
-	}
-
 	switch(mode)
 	{
 		case MODE_REVIVE:
 		{
-			new modes_struct:iMode = get_entvar(iEnt, var_iuser3);
+			static modes_struct:iMode;
+			iMode = get_entvar(iEnt, var_iuser3);
 			
 			if(iMode != MODE_PLANT && g_iSounds[SECTION_REVIVE_END])
 			{
 				if(g_eCvars[NEARBY_PLAYERS])
-				{
 					PlaybackSoundNearbyPlayers(iEnt, g_szSounds[SECTION_REVIVE_END][random(g_iSounds[SECTION_REVIVE_END])]);
-				}
 				else
 				{
 					rg_send_audio(activator, g_szSounds[SECTION_REVIVE_END][random(g_iSounds[SECTION_REVIVE_END])]);
@@ -166,9 +142,7 @@ public rt_revive_end(const iEnt, const id, const activator, const modes_struct:m
 			if(g_iSounds[SECTION_PLANT_END])
 			{
 				if(g_eCvars[NEARBY_PLAYERS])
-				{
 					PlaybackSoundNearbyPlayers(iEnt, g_szSounds[SECTION_PLANT_END][random(g_iSounds[SECTION_PLANT_END])]);
-				}
 				else
 				{
 					rg_send_audio(activator, g_szSounds[SECTION_PLANT_END][random(g_iSounds[SECTION_PLANT_END])]);
@@ -237,17 +211,15 @@ public ReadValues(INIParser:iParser, const szKey[], const szValue[])
 
 stock PlaybackSoundNearbyPlayers(const id, szSound[])
 {
-	new iEnt = NULLENT, Float:vOrigin[3];
+	static iEnt;
+	iEnt = NULLENT
+
+	static Float:vOrigin[3];
+	get_entvar(id, var_vuser4, vOrigin);
 	
-	get_entvar(id, var_origin, vOrigin);
-	
-	while((iEnt = find_ent_in_sphere(iEnt, vOrigin, g_eCvars[SOUND_RADIUS])) > 0)
-	{
+	while((iEnt = engfunc(EngFunc_FindEntityInSphere, iEnt, vOrigin, g_eCvars[SOUND_RADIUS])) > 0)
 		if(ExecuteHam(Ham_IsPlayer, iEnt))
-		{
 			rg_send_audio(iEnt, szSound);
-		}
-	}
 }
 
 public RegisterCvars()
@@ -263,7 +235,7 @@ public RegisterCvars()
 	);
 	bind_pcvar_num(create_cvar(
 		"rt_nearby_players",
-		"1",
+		"0",
 		FCVAR_NONE,
 		"Play the resurrection/landing sound for nearby players. 0 - off, 1 - only ending sounds, 2 - all sounds",
 		true,

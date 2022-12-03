@@ -32,7 +32,7 @@ public plugin_precache()
 	g_szModels[FireBall3] = precache_model("sprites/fexplo.spr");
 
 	RegisterCvars();
-	UTIL_UploadConfigs();
+	UploadConfigs();
 }
 
 public plugin_init()
@@ -56,12 +56,8 @@ public client_disconnected(id)
 
 public rt_revive_start(const iEnt, const id, const activator, const modes_struct:mode)
 {
-	if(id == NULLENT || activator == NULLENT)
-	{
-		return PLUGIN_HANDLED;
-	}
-
-	new modes_struct:iMode = get_entvar(iEnt, var_iuser3);
+	static modes_struct:iMode;
+	iMode = get_entvar(iEnt, var_iuser3);
 	
 	if(mode == MODE_PLANT)
 	{
@@ -83,38 +79,31 @@ public rt_revive_start(const iEnt, const id, const activator, const modes_struct
 
 public rt_revive_end(const iEnt, const id, const activator, const modes_struct:mode)
 {
-	if(id == NULLENT || activator == NULLENT)
-	{
-		return;
-	}
-
 	switch(mode)
 	{
 		case MODE_REVIVE:
 		{
-			new modes_struct:iMode = get_entvar(iEnt, var_iuser3);
+			static modes_struct:iMode;
+			iMode = get_entvar(iEnt, var_iuser3);
 
 			if(iMode == MODE_PLANT)
 			{
-				new Float:vOrigin[3];
+				static Float:vOrigin[3];
 				get_entvar(activator, var_origin, vOrigin);
 				UTIL_MakeExplosionEffects(vOrigin);
 				
-				new iPlanter = get_entvar(iEnt, var_iuser4);
+				static iPlanter;
+				iPlanter = get_entvar(iEnt, var_iuser4);
 				
 				for(new iVictim = 1, Float:fReduceDamage, Float:vecEnd[3]; iVictim <= MaxClients; iVictim++)
 				{
 					if(!is_user_alive(iVictim) || TeamName:get_member(iVictim, m_iTeam) != TeamName:get_member(id, m_iTeam))
-					{
 						continue;
-					}
 					
 					get_entvar(iVictim, var_origin, vecEnd);
 
 					if((fReduceDamage = (g_eCvars[DAMAGE] - vector_distance(vOrigin, vecEnd) * (g_eCvars[DAMAGE] / g_eCvars[RADIUS]))) < 1.0)
-					{
 						continue;
-					}
 					
 					set_member(iVictim, m_LastHitGroup, HITGROUP_GENERIC);
 

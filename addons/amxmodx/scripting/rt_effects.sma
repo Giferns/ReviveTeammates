@@ -27,12 +27,10 @@ new Float:g_fTime;
 public plugin_precache()
 {
 	RegisterCvars();
-	UTIL_UploadConfigs();
+	UploadConfigs();
 
 	if(g_eCvars[CORPSE_SPRITE][0] != EOS)
-	{
 		precache_model(g_eCvars[CORPSE_SPRITE]);
-	}
 }
 
 public plugin_init()
@@ -47,14 +45,10 @@ public plugin_init()
 public plugin_cfg()
 {
 	if(g_eCvars[REVIVE_GLOW][0] != EOS)
-	{
 		g_eGlowColors[REVIVE_COLOR] = parseHEXColor(g_eCvars[REVIVE_GLOW]);
-	}
 	
 	if(g_eCvars[PLANTING_GLOW][0] != EOS)
-	{
 		g_eGlowColors[PLANTING_COLOR] = parseHEXColor(g_eCvars[PLANTING_GLOW]);
-	}
 
 	g_fTime = get_pcvar_float(get_cvar_pointer("rt_revive_time"));
 }
@@ -62,25 +56,16 @@ public plugin_cfg()
 public AddToFullPack_Post(es, e, ent, host, flags, player, pSet)
 {
 	if(g_eCvars[CORPSE_SPRITE][0] == EOS || player || !FClassnameIs(ent, CORPSE_SPRITE_CLASSNAME))
-	{
 		return FMRES_IGNORED;
-	}
 
 	if(TeamName:get_entvar(ent, var_team) != TeamName:get_member(host, m_iTeam))
-	{
 		set_es(es, ES_Effects, EF_NODRAW);
-	}
 
 	return FMRES_IGNORED;
 }
 
 public rt_revive_start(const iEnt, const id, const activator, const modes_struct:mode)
 {
-	if(id == NULLENT || activator == NULLENT)
-	{
-		return PLUGIN_HANDLED;
-	}
-
 	switch(mode)
 	{
 		case MODE_REVIVE:
@@ -100,21 +85,15 @@ public rt_revive_start(const iEnt, const id, const activator, const modes_struct
 			}
 			
 			if(g_eCvars[REVIVE_GLOW][0] != EOS)
-			{
 				rg_set_rendering(iEnt, kRenderFxGlowShell, g_eGlowColors[REVIVE_COLOR], kRenderNormal, 30.0);
-			}
 		}
 		case MODE_PLANT:
 		{
 			if(g_eCvars[NOTIFY_DHUD])
-			{
 				DisplayDHUDMessage(activator, fmt("%L", activator, "RT_DHUD_PLANTING", id), mode);
-			}
 			
 			if(g_eCvars[PLANTING_GLOW][0] != EOS)
-			{
 				rg_set_rendering(iEnt, kRenderFxGlowShell, g_eGlowColors[PLANTING_COLOR], kRenderNormal, 30.0);
-			}
 		}
 	}
 
@@ -123,60 +102,46 @@ public rt_revive_start(const iEnt, const id, const activator, const modes_struct
 
 public rt_revive_cancelled(const iEnt, const id, const activator, const modes_struct:mode)
 {
-	if(id == NULLENT || activator == NULLENT)
-	{
-		return;
-	}
-	
 	switch(mode)
 	{
 		case MODE_REVIVE:
 		{
 			if(g_eCvars[REVIVE_GLOW][0] != EOS)
-			{
 				rg_set_rendering(iEnt);
-			}
 		}
 		case MODE_PLANT:
 		{
 			if(g_eCvars[PLANTING_GLOW][0] != EOS)
-			{
 				rg_set_rendering(iEnt);
-			}
 		}
 	}
 
 	if(g_eCvars[NOTIFY_DHUD])
 	{
-		ClearDHUDMessages(activator);
-		ClearDHUDMessages(id);
+		if(activator != NULLENT)
+			ClearDHUDMessages(activator);
+
+		if(id != NULLENT)
+			ClearDHUDMessages(id);
 	}
 }
 
 public rt_revive_end(const iEnt, const id, const activator, const modes_struct:mode)
 {
-	if(id == NULLENT || activator == NULLENT)
-	{
-		return;
-	}
-
 	switch(mode)
 	{
 		case MODE_REVIVE:
 		{
-			new modes_struct:iMode = get_entvar(iEnt, var_iuser3);
+			static modes_struct:iMode;
+			iMode = get_entvar(iEnt, var_iuser3);
 			
 			if(iMode != MODE_PLANT && g_eCvars[REVIVE_GLOW][0] != EOS)
-			{
 				rg_set_rendering(iEnt);
-			}
 		}
 		case MODE_PLANT:
 		{
 			if(g_eCvars[PLANTING_GLOW][0] != EOS)
-			{
 				rg_set_rendering(iEnt);
-			}
 		}
 	}
 
@@ -194,16 +159,12 @@ public rt_creating_corpse_end(const iEnt, const id, const origin[3])
 		new iEntSprite = rg_create_entity("info_target");
 
 		if(is_nullent(iEntSprite))
-		{
 			return;
-		}
 
 		new Float:fOrigin[3];
 
 		for(new i; i < 3; i++)
-		{
 			fOrigin[i] = float(origin[i]);
-		}
 
 		engfunc(EngFunc_SetOrigin, iEntSprite, fOrigin);
 		engfunc(EngFunc_SetModel, iEntSprite, g_eCvars[CORPSE_SPRITE]);
@@ -246,9 +207,7 @@ stock Float:parseHEXColor(const value[])
 	new Float:result[3];
 
 	if(value[0] != '#' && strlen(value) != 7)
-	{
 		return result;
-	}
 
 	result[0] = parse16bit(value[1], value[2]);
 	result[1] = parse16bit(value[3], value[4]);
@@ -266,18 +225,9 @@ stock parseHex(const ch)
 {
 	switch(ch)
 	{
-		case '0'..'9':
-		{
-			return (ch - '0');
-		}
-		case 'a'..'f':
-		{
-			return (10 + ch - 'a');
-		}
-		case 'A'..'F':
-		{
-			return (10 + ch - 'A');
-		}
+		case '0'..'9': return (ch - '0');
+		case 'a'..'f': return (10 + ch - 'a');
+		case 'A'..'F': return (10 + ch - 'A');
 	}
 
 	return 0;
@@ -287,14 +237,8 @@ stock DisplayDHUDMessage(id, szMessage[], modes_struct:mode)
 {
 	switch(mode)
 	{
-		case MODE_REVIVE:
-		{
-			set_dhudmessage(0, 255, 0, -1.0, 0.81, .holdtime = g_fTime);
-		}
-		case MODE_PLANT:
-		{
-			set_dhudmessage(255, 0, 0, -1.0, 0.81, .holdtime = g_fTime);
-		}
+		case MODE_REVIVE: set_dhudmessage(0, 255, 0, -1.0, 0.81, .holdtime = g_fTime);
+		case MODE_PLANT: set_dhudmessage(255, 0, 0, -1.0, 0.81, .holdtime = g_fTime);
 	}
 
 	show_dhudmessage(id, szMessage);
@@ -303,9 +247,7 @@ stock DisplayDHUDMessage(id, szMessage[], modes_struct:mode)
 stock ClearDHUDMessages(id, iClear = 8)
 {
 	for(new i; i < iClear; i++)
-	{
 		show_dhudmessage(id, "");
-	}
 }
 
 public RegisterCvars()
@@ -362,7 +304,9 @@ public RegisterCvars()
 		FCVAR_NONE,
 		"Sprite scale",
 		true,
-		0.1),
+		0.1,
+		true,
+		0.5),
 		g_eCvars[SPRITE_SCALE]
 	);
 }

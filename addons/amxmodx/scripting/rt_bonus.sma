@@ -23,7 +23,7 @@ new g_szWeapon[MAX_SPAWN_WEAPONS][32];
 public plugin_precache()
 {
 	RegisterCvars();
-	UTIL_UploadConfigs();
+	UploadConfigs();
 }
 
 public plugin_init()
@@ -43,9 +43,7 @@ public plugin_cfg()
 		while(argbreak(g_eCvars[WEAPONS_MAPS], szWeapon, charsmax(szWeapon), g_eCvars[WEAPONS_MAPS], charsmax(g_eCvars[WEAPONS_MAPS])) != -1)
 		{
 			if(g_iWeapons == MAX_SPAWN_WEAPONS)
-			{
 				break;
-			}
 
 			copy(g_szWeapon[g_iWeapons++], charsmax(g_szWeapon[]), szWeapon);
 		}
@@ -58,9 +56,7 @@ public plugin_cfg()
 		while(argbreak(g_eCvars[WEAPONS], szWeapon, charsmax(szWeapon), g_eCvars[WEAPONS], charsmax(g_eCvars[WEAPONS])) != -1)
 		{
 			if(g_iWeapons == MAX_SPAWN_WEAPONS)
-			{
 				break;
-			}
 
 			copy(g_szWeapon[g_iWeapons++], charsmax(g_szWeapon[]), szWeapon);
 		}
@@ -69,33 +65,23 @@ public plugin_cfg()
 
 public rt_revive_end(const iEnt, const id, const activator, const modes_struct:mode)
 {
-	if(id == NULLENT || activator == NULLENT)
-	{
-		return;
-	}
-
 	switch(mode)
 	{
 		case MODE_REVIVE:
 		{
-			new modes_struct:iMode = get_entvar(iEnt, var_iuser3);
+			static modes_struct:iMode;
+			iMode = get_entvar(iEnt, var_iuser3);
 
 			if(iMode != MODE_PLANT)
 			{
 				if(g_eCvars[REVIVE_HEALTH])
-				{
 					rg_add_health_to_player(activator, g_eCvars[REVIVE_HEALTH]);
-				}
 
 				if(g_eCvars[HEALTH])
-				{
 					set_entvar(id, var_health, floatclamp(g_eCvars[HEALTH], 1.0, Float:get_entvar(id, var_max_health)));
-				}
 
 				if(g_eCvars[ARMOR])
-				{
 					rg_set_user_armor(id, g_eCvars[ARMOR], ArmorType:g_eCvars[ARMOR_TYPE]);
-				}
 
 				if(g_iWeapons > 0)
 				{
@@ -105,30 +91,28 @@ public rt_revive_end(const iEnt, const id, const activator, const modes_struct:m
 					{
 						new iWeapon = rg_give_item(id, g_szWeapon[i]);
 
-						if(iWeapon != -1)
+						if(!is_nullent(iWeapon))
 						{
-							set_member(id, m_rgAmmo, rg_get_iteminfo(iWeapon, ItemInfo_iMaxAmmo1), get_member(iWeapon, m_Weapon_iPrimaryAmmoType));
+							static WeaponIdType:iWeaponType;
+							iWeaponType = get_member(iWeapon, m_iId);
+
+							if(iWeaponType != WEAPON_KNIFE && iWeaponType != WEAPON_SHIELDGUN)
+								rg_set_user_bpammo(id, iWeaponType, rg_get_iteminfo(iWeapon, ItemInfo_iMaxAmmo1));
 						}
 					}
 				}
 
 				if(g_eCvars[FRAGS])
-				{
 					ExecuteHamB(Ham_AddPoints, activator, g_eCvars[FRAGS], false);
-				}
 				
 				if(g_eCvars[NO_DEATHPOINT])
-				{
 					set_member(id, m_iDeaths, max(get_member(id, m_iDeaths) - 1, 0));
-				}
 			}
 		}
 		case MODE_PLANT:
 		{
 			if(g_eCvars[PLANTING_HEALTH])
-			{
 				rg_add_health_to_player(activator, g_eCvars[PLANTING_HEALTH]);
-			}
 		}
 	}
 }

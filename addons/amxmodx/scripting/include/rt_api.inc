@@ -8,12 +8,11 @@
 #define _rt_api_included
 
 #include <amxmodx>
-#include <engine>
 #include <fakemeta>
 #include <hamsandwich>
 #include <reapi>
 
-#define VERSION "0.11.0"
+#define VERSION "1.0.0"
 #define AUTHORS "ufame & Albertio"
 
 enum modes_struct
@@ -112,18 +111,26 @@ forward rt_creating_corpse_end(const iEnt, const id, const origin[3]);
 */
 stock UTIL_RemoveCorpses(const id = 0, const szClassName[] = DEAD_BODY_CLASSNAME)
 {
-	new iEnt = NULLENT;
+	static iEnt, iActivator;
+	iEnt = NULLENT;
 
 	while((iEnt = rg_find_ent_by_class(iEnt, szClassName)) > 0)
 	{
-		if(id && get_entvar(iEnt, var_owner) != id)
+		if(!is_nullent(iEnt))
 		{
-			continue;
+			if(id && get_entvar(iEnt, var_owner) != id)
+				continue;
+
+			iActivator = get_entvar(iEnt, var_iuser1);
+			
+			set_entvar(iEnt, var_flags, FL_KILLME);
+			set_entvar(iEnt, var_nextthink, -1.0);
+
+			return iActivator;
 		}
-		
-		set_entvar(iEnt, var_flags, FL_KILLME);
-		set_entvar(iEnt, var_nextthink, -1.0);
 	}
+
+	return 0;
 }
 
 /*
@@ -131,8 +138,11 @@ stock UTIL_RemoveCorpses(const id = 0, const szClassName[] = DEAD_BODY_CLASSNAME
 */
 stock UTIL_ResetEntityThink(const eForward, const iEnt, const id, const activator, const modes_struct:mode)
 {
-	set_entvar(iEnt, var_iuser1, 0);
-	set_entvar(iEnt, var_nextthink, 0.0);
+	if(iEnt != NULLENT)
+	{
+		set_entvar(iEnt, var_nextthink, 0.0);
+		set_entvar(iEnt, var_iuser1, 0);
+	}
 
 	ExecuteForward(eForward, _, iEnt, UTIL_IsUserConnected(id), UTIL_IsUserConnected(activator), mode);
 }
@@ -148,16 +158,16 @@ stock UTIL_IsUserConnected(const id)
 /*
 * Loads plugin configs
 */
-stock UTIL_UploadConfigs()
+stock UploadConfigs()
 {
-	new path[MAX_RESOURCE_PATH_LENGTH], pl_fname[32];
+	new szPath[MAX_RESOURCE_PATH_LENGTH], szPlFileName[32];
 	
-	get_localinfo("amxx_configsdir", path, charsmax(path));
-	get_plugin(-1, pl_fname, charsmax(pl_fname));
+	get_localinfo("amxx_configsdir", szPath, charsmax(szPath));
+	get_plugin(-1, szPlFileName, charsmax(szPlFileName));
 
-	copyc(pl_fname, charsmax(pl_fname), pl_fname, '.');
-	formatex(path, charsmax(path), "%s/rt_configs/%s.cfg", path, pl_fname);
+	copyc(szPlFileName, charsmax(szPlFileName), szPlFileName, '.');
+	formatex(szPath, charsmax(szPath), "%s/rt_configs/%s.cfg", szPath, szPlFileName);
 
-	server_cmd("exec %s", path);
+	server_cmd("exec %s", szPath);
 	server_exec();
 }

@@ -35,7 +35,7 @@ new HookChain:g_pHook_ResetMaxSpeed;
 public plugin_precache()
 {
 	RegisterCvars();
-	UTIL_UploadConfigs();
+	UploadConfigs();
 }
 
 public plugin_init()
@@ -55,9 +55,7 @@ public plugin_cfg()
 	g_iAccessFlags = read_flags(g_eCvars[ACCESS]);
 
 	if(g_eCvars[NO_MOVE] == 1)
-	{
 		EnableHookChain(g_pHook_ResetMaxSpeed);
-	}
 }
 
 public CSGameRules_CleanUpMap_Post()
@@ -73,18 +71,11 @@ public client_disconnected(id)
 public CBasePlayer_ResetMaxSpeed_Post(const iActivator)
 {
 	if(get_entvar(iActivator, var_iuser3) & g_iPreventFlags)
-	{
 		set_entvar(iActivator, var_maxspeed, 1.0);
-	}
 }
 
 public rt_revive_start(const iEnt, const id, const activator, const modes_struct:mode)
 {
-	if(id == NULLENT || activator == NULLENT)
-	{
-		return PLUGIN_HANDLED;
-	}
-	
 	if((get_user_flags(activator) & g_iAccessFlags) != g_iAccessFlags)
 	{
 		client_print_color(activator, print_team_red, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_NO_ACCESS");
@@ -103,15 +94,15 @@ public rt_revive_start(const iEnt, const id, const activator, const modes_struct
 		return PLUGIN_HANDLED;
 	}
 
-	if(g_eCvars[DUEL] && rg_users_count(0))
-	{
-		client_print_color(activator, print_team_red, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_DUEL");
-		return PLUGIN_HANDLED;
-	}
-
 	if(g_eCvars[SURVIVOR] && rg_users_count(1))
 	{
 		client_print_color(activator, print_team_red, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_SURVIVOR");
+		return PLUGIN_HANDLED;
+	}
+
+	if(g_eCvars[DUEL] && rg_users_count(0))
+	{
+		client_print_color(activator, print_team_red, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_DUEL");
 		return PLUGIN_HANDLED;
 	}
 	
@@ -167,20 +158,13 @@ public rt_revive_start(const iEnt, const id, const activator, const modes_struct
 	}
 
 	if(g_eCvars[NO_FIRE])
-	{
 		set_member(activator, m_bIsDefusing, true);
-	}
 
 	return PLUGIN_CONTINUE;
 }
 
 public rt_revive_loop_pre(const iEnt, const id, const activator, const Float:timer, modes_struct:mode)
 {
-	if(id == NULLENT || activator == NULLENT)
-	{
-		return PLUGIN_HANDLED;
-	}
-
 	if(g_eCvars[BOMB] && rg_is_bomb_planted())
 	{
 		client_print_color(activator, print_team_red, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_BOMB");
@@ -207,7 +191,7 @@ public rt_revive_loop_pre(const iEnt, const id, const activator, const Float:tim
 
 	if(g_eCvars[NO_MOVE] == 2)
 	{
-		new Float:vPlOrigin[3], Float:vEntOrigin[3];
+		static Float:vPlOrigin[3], Float:vEntOrigin[3];
 		get_entvar(activator, var_origin, vPlOrigin);
 		get_entvar(iEnt, var_vuser4, vEntOrigin);
 
@@ -223,10 +207,8 @@ public rt_revive_loop_pre(const iEnt, const id, const activator, const Float:tim
 
 public rt_revive_cancelled(const iEnt, const id, const activator, const modes_struct:mode)
 {
-	if(id == NULLENT || activator == NULLENT)
-	{
+	if(activator == NULLENT)
 		return;
-	}
 
 	if(g_eCvars[NO_MOVE] == 1)
 	{
@@ -235,23 +217,17 @@ public rt_revive_cancelled(const iEnt, const id, const activator, const modes_st
 	}
 
 	if(g_eCvars[NO_FIRE])
-	{
 		set_member(activator, m_bIsDefusing, false);
-	}
 }
 
 public rt_revive_end(const iEnt, const id, const activator, const modes_struct:mode)
 {
-	if(id == NULLENT || activator == NULLENT)
-	{
-		return;
-	}
-
 	switch(mode)
 	{
 		case MODE_REVIVE:
 		{
-			new modes_struct:iMode = get_entvar(iEnt, var_iuser3);
+			static modes_struct:iMode;
+			iMode = get_entvar(iEnt, var_iuser3);
 
 			if(iMode != MODE_PLANT)
 			{
@@ -260,10 +236,7 @@ public rt_revive_end(const iEnt, const id, const activator, const modes_struct:m
 				rg_add_account(activator, -g_eCvars[REVIVE_COST]);
 			}
 		}
-		case MODE_PLANT:
-		{
-			rg_add_account(activator, -g_eCvars[PLANTING_COST]);
-		}
+		case MODE_PLANT: rg_add_account(activator, -g_eCvars[PLANTING_COST]);
 	}
 
 	if(g_eCvars[NO_MOVE] == 1)
@@ -273,33 +246,18 @@ public rt_revive_end(const iEnt, const id, const activator, const modes_struct:m
 	}
 
 	if(g_eCvars[NO_FIRE])
-	{
 		set_member(activator, m_bIsDefusing, false);
-	}
 }
 
 stock rg_users_count(mode)
 {
-	new iAliveTs, iAliveCTs;
+	static iAliveTs, iAliveCTs;
 	rg_initialize_player_counts(iAliveTs, iAliveCTs);
 
-	switch(mode)
-	{
-		case 0:
-		{
-			if(iAliveTs == 1 && iAliveCTs == 1)
-			{
-				return 1;
-			}
-		}
-		case 1:
-		{
-			if(iAliveTs == 1 || iAliveCTs == 1)
-			{
-				return 1;
-			}
-		}
-	}
+	if(mode == 0 && (iAliveTs == 1 && iAliveCTs == 1))
+		return 1;
+	else if(mode == 1 && (iAliveTs == 1 || iAliveCTs == 1))
+		return 1;
 
 	return 0;
 }
@@ -311,25 +269,12 @@ stock Float:rg_get_remaining_time()
 
 stock TeamName:rg_get_team_wins_row(const iWins)
 {
-	new TeamName:iTeam = TEAM_UNASSIGNED;
-	new iNumConsecutiveCTLoses = get_member_game(m_iNumConsecutiveCTLoses);
-	new iNumConsecutiveTerroristLoses = get_member_game(m_iNumConsecutiveTerroristLoses);
+	if(get_member_game(m_iNumConsecutiveCTLoses) >= iWins)
+		return TEAM_TERRORIST;
+	else if(get_member_game(m_iNumConsecutiveTerroristLoses) >= iWins)
+		return TEAM_CT;
 	
-	if(iNumConsecutiveCTLoses > 0)
-	{
-		iTeam = TEAM_TERRORIST;
-	}
-	else if(iNumConsecutiveTerroristLoses > 0)
-	{
-		iTeam = TEAM_CT;
-	}
-	
-	if(abs(iNumConsecutiveCTLoses + iNumConsecutiveTerroristLoses) < iWins)
-	{
-		iTeam = TEAM_UNASSIGNED;
-	}
-	
-	return iTeam;
+	return TEAM_UNASSIGNED;
 }
 
 public RegisterCvars()
