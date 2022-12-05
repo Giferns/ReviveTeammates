@@ -63,9 +63,9 @@ public plugin_cfg()
 	}
 }
 
-public rt_revive_end(const iEnt, const id, const activator, const modes_struct:mode)
+public rt_revive_end(const iEnt, const id, const iActivator, const modes_struct:eMode)
 {
-	switch(mode)
+	switch(eMode)
 	{
 		case MODE_REVIVE:
 		{
@@ -75,7 +75,7 @@ public rt_revive_end(const iEnt, const id, const activator, const modes_struct:m
 			if(iMode != MODE_PLANT)
 			{
 				if(g_eCvars[REVIVE_HEALTH])
-					rg_add_health_to_player(activator, g_eCvars[REVIVE_HEALTH]);
+					rg_add_health_to_player(iActivator, g_eCvars[REVIVE_HEALTH]);
 
 				if(g_eCvars[HEALTH])
 					set_entvar(id, var_health, floatclamp(g_eCvars[HEALTH], 1.0, Float:get_entvar(id, var_max_health)));
@@ -103,7 +103,7 @@ public rt_revive_end(const iEnt, const id, const activator, const modes_struct:m
 				}
 
 				if(g_eCvars[FRAGS])
-					ExecuteHamB(Ham_AddPoints, activator, g_eCvars[FRAGS], false);
+					ExecuteHamB(Ham_AddPoints, iActivator, g_eCvars[FRAGS], false);
 				
 				if(g_eCvars[NO_DEATHPOINT])
 					set_member(id, m_iDeaths, max(get_member(id, m_iDeaths) - 1, 0));
@@ -112,7 +112,7 @@ public rt_revive_end(const iEnt, const id, const activator, const modes_struct:m
 		case MODE_PLANT:
 		{
 			if(g_eCvars[PLANTING_HEALTH])
-				rg_add_health_to_player(activator, g_eCvars[PLANTING_HEALTH]);
+				rg_add_health_to_player(iActivator, g_eCvars[PLANTING_HEALTH]);
 		}
 	}
 }

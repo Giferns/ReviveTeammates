@@ -59,12 +59,11 @@ public client_disconnected(id)
 {
 	g_flLastUse[id] = 0.0;
 
-	new iActivator = UTIL_RemoveCorpses(id, DEAD_BODY_CLASSNAME);
+	new iActivator= UTIL_RemoveCorpses(id, DEAD_BODY_CLASSNAME);
 
 	if(is_user_connected(iActivator))
 	{
-		client_print_color(iActivator, print_team_red, "%L %L", iActivator, "RT_CHAT_TAG", iActivator, "RT_DISCONNECTED");
-
+		UTIL_NotifyClient(iActivator, print_team_red, "RT_DISCONNECTED");
 		UTIL_ResetEntityThink(g_eForwards[ReviveCancelled], NULLENT, id, iActivator, MODE_NONE);
 	}
 }
@@ -94,7 +93,6 @@ public CBasePlayer_UseEmpty_Pre(const iActivator)
 			if(ExecuteHam(Ham_FVecInViewCone, iActivator, vEntOrigin) && vector_distance(vPlOrigin, vEntOrigin) < g_eCvars[SEARCH_RADIUS])
 			{
 				Corpse_Use(iEnt, iActivator);
-
 				return;
 			}
 		}
@@ -125,22 +123,19 @@ public Corpse_Use(const iEnt, const iActivator)
 
 	if(iEntTeam != iPlTeam)
 	{
-		client_print_color(iActivator, print_team_red, "%L %L", iActivator, "RT_CHAT_TAG", iActivator, "RT_CHANGE_TEAM");
-
+		UTIL_NotifyClient(iActivator, print_team_red, "RT_CHANGE_TEAM");
 		return;
 	}
 
 	if(get_entvar(iEnt, var_iuser1))
 	{
-		client_print_color(iActivator, print_team_red, "%L %L", iActivator, "RT_CHAT_TAG", iActivator, "RT_ACTIVATOR_EXISTS");
-
+		UTIL_NotifyClient(iActivator, print_team_red, "RT_ACTIVATOR_EXISTS");
 		return;
 	}
 
 	if(!is_user_alive(iActivator))
 	{
 		UTIL_ResetEntityThink(g_eForwards[ReviveCancelled], iEnt, iPlayer, iActivator, eCurrentMode);
-
 		return;
 	}
 
@@ -151,7 +146,6 @@ public Corpse_Use(const iEnt, const iActivator)
 	if(fwRet == PLUGIN_HANDLED)
 	{
 		UTIL_ResetEntityThink(g_eForwards[ReviveCancelled], iEnt, iPlayer, iActivator, eCurrentMode);
-
 		return;
 	}
 
@@ -160,17 +154,14 @@ public Corpse_Use(const iEnt, const iActivator)
 
 	if(g_flLastUse[iActivator] > flGameTime)
 	{
-		client_print_color(iActivator, print_team_red, "%L %L", iActivator, "RT_CHAT_TAG", iActivator, "RT_ANTI_FLOOD");
-
+		UTIL_NotifyClient(iActivator, print_team_red, "RT_ANTI_FLOOD");
 		UTIL_ResetEntityThink(g_eForwards[ReviveCancelled], iEnt, iPlayer, iActivator, eCurrentMode);
-
 		return;
 	}
 
 	g_flLastUse[iActivator] = flGameTime + g_eCvars[ANTIFLOOD_TIME];
 
-	client_print_color(iActivator, print_team_blue, "%L %L", iActivator, "RT_CHAT_TAG",
-	iActivator, eCurrentMode == MODE_REVIVE ? "RT_TIMER_REVIVE" : "RT_TIMER_PLANT", iPlayer);
+	UTIL_NotifyClient(iActivator, print_team_blue, eCurrentMode == MODE_REVIVE ? "RT_TIMER_REVIVE" : "RT_TIMER_PLANT", iPlayer);
 
 	g_iTimeUntil[iActivator] = 0;
 
@@ -199,8 +190,7 @@ public Corpse_Think(const iEnt)
 
 	if(iEntTeam != iPlTeam)
 	{
-		client_print_color(iActivator, print_team_red, "%L %L", iActivator, "RT_CHAT_TAG", iActivator, "RT_CHANGE_TEAM");
-
+		UTIL_NotifyClient(iActivator, print_team_red, "RT_CHANGE_TEAM");
 		return;
 	}
 
@@ -209,17 +199,13 @@ public Corpse_Think(const iEnt)
 	if(g_eCvars[CORPSE_TIME] && !iActivator && get_entvar(iEnt, var_fuser4) < flGameTime)
 	{
 		UTIL_RemoveCorpses(iPlayer, DEAD_BODY_CLASSNAME);
-
 		return;
 	}
 
 	if(~get_entvar(iActivator, var_button) & IN_USE)
 	{
-		client_print_color(iActivator, print_team_red, "%L %L", iActivator, "RT_CHAT_TAG",
-		iActivator, eCurrentMode == MODE_REVIVE ? "RT_CANCELLED_REVIVE" : "RT_CANCELLED_PLANT");
-		
+		UTIL_NotifyClient(iActivator, print_team_red, eCurrentMode == MODE_REVIVE ? "RT_CANCELLED_REVIVE" : "RT_CANCELLED_PLANT");
 		UTIL_ResetEntityThink(g_eForwards[ReviveCancelled], iEnt, iPlayer, iActivator, eCurrentMode);
-
 		return;
 	}
 	
@@ -236,7 +222,6 @@ public Corpse_Think(const iEnt)
 		if(!is_user_alive(iActivator))
 		{
 			UTIL_ResetEntityThink(g_eForwards[ReviveCancelled], iEnt, iPlayer, iActivator, eCurrentMode);
-
 			return;
 		}
 
@@ -247,7 +232,6 @@ public Corpse_Think(const iEnt)
 		if(fwRet == PLUGIN_HANDLED)
 		{
 			UTIL_ResetEntityThink(g_eForwards[ReviveCancelled], iEnt, iPlayer, iActivator, eCurrentMode);
-			
 			return;
 		}
 	}
@@ -258,8 +242,8 @@ public Corpse_Think(const iEnt)
 
 		if(eCurrentMode == MODE_REVIVE && iMode != MODE_PLANT)
 		{
-			client_print_color(iActivator, print_team_blue, "%L %L", iActivator, "RT_CHAT_TAG", iActivator, "RT_REVIVE", iPlayer);
-			client_print_color(iPlayer, print_team_blue, "%L %L", iPlayer, "RT_CHAT_TAG", iPlayer, "RT_REVIVED", iActivator);
+			UTIL_NotifyClient(iActivator, print_team_blue, "RT_REVIVE", iPlayer);
+			UTIL_NotifyClient(iPlayer, print_team_blue, "RT_REVIVED", iActivator);
 
 			rg_round_respawn(iPlayer);
 
@@ -276,7 +260,6 @@ public Corpse_Think(const iEnt)
 		if(!is_user_alive(iActivator))
 		{
 			UTIL_ResetEntityThink(g_eForwards[ReviveCancelled], iEnt, iPlayer, iActivator, eCurrentMode);
-
 			return;
 		}
 
@@ -290,7 +273,6 @@ public Corpse_Think(const iEnt)
 		if(!is_user_alive(iActivator))
 		{
 			UTIL_ResetEntityThink(g_eForwards[ReviveCancelled], iEnt, iPlayer, iActivator, eCurrentMode);
-
 			return;
 		}
 		
@@ -338,7 +320,6 @@ public MessageHook_ClCorpse()
 	{
 		set_entvar(iEnt, var_flags, FL_KILLME);
 		set_entvar(iEnt, var_nextthink, -1.0);
-
 		return PLUGIN_HANDLED;
 	}
 

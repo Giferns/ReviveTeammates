@@ -9,14 +9,7 @@ enum CVARS
 
 new g_eCvars[CVARS];
 
-enum Models
-{
-	FireBall1,
-	FireBall2,
-	FireBall3
-};
-
-new g_szModels[Models];
+new g_szModels[3];
 
 enum _:PlayerData
 {
@@ -27,9 +20,9 @@ new g_ePlayerData[MAX_PLAYERS + 1][PlayerData];
 
 public plugin_precache()
 {
-	g_szModels[FireBall1] = precache_model("sprites/zerogxplode.spr");
-	g_szModels[FireBall2] = precache_model("sprites/eexplo.spr");
-	g_szModels[FireBall3] = precache_model("sprites/fexplo.spr");
+	g_szModels[0] = precache_model("sprites/zerogxplode.spr");
+	g_szModels[1] = precache_model("sprites/eexplo.spr");
+	g_szModels[2] = precache_model("sprites/fexplo.spr");
 
 	RegisterCvars();
 	UploadConfigs();
@@ -54,22 +47,22 @@ public client_disconnected(id)
 	g_ePlayerData[id][PLANTING_COUNT] = 0;
 }
 
-public rt_revive_start(const iEnt, const id, const activator, const modes_struct:mode)
+public rt_revive_start(const iEnt, const id, const iActivator, const modes_struct:eMode)
 {
 	static modes_struct:iMode;
 	iMode = get_entvar(iEnt, var_iuser3);
 	
-	if(mode == MODE_PLANT)
+	if(eMode == MODE_PLANT)
 	{
-		if(g_ePlayerData[activator][PLANTING_COUNT] >= g_eCvars[MAX_PLANTING])
+		if(g_ePlayerData[iActivator][PLANTING_COUNT] >= g_eCvars[MAX_PLANTING])
 		{
-			client_print_color(activator, print_team_red, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_PLANTING_COUNT");
+			UTIL_NotifyClient(iActivator, print_team_red, "RT_PLANTING_COUNT");
 			return PLUGIN_HANDLED;
 		}
 
 		if(iMode == MODE_PLANT)
 		{
-			client_print_color(activator, print_team_red, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_IS_PLANTED", id);
+			UTIL_NotifyClient(iActivator, print_team_red, "RT_IS_PLANTED", id);
 			return PLUGIN_HANDLED;
 		}
 	}
@@ -77,9 +70,9 @@ public rt_revive_start(const iEnt, const id, const activator, const modes_struct
 	return PLUGIN_CONTINUE;
 }
 
-public rt_revive_end(const iEnt, const id, const activator, const modes_struct:mode)
+public rt_revive_end(const iEnt, const id, const iActivator, const modes_struct:eMode)
 {
-	switch(mode)
+	switch(eMode)
 	{
 		case MODE_REVIVE:
 		{
@@ -89,7 +82,7 @@ public rt_revive_end(const iEnt, const id, const activator, const modes_struct:m
 			if(iMode == MODE_PLANT)
 			{
 				static Float:vOrigin[3];
-				get_entvar(activator, var_origin, vOrigin);
+				get_entvar(iActivator, var_origin, vOrigin);
 				UTIL_MakeExplosionEffects(vOrigin);
 				
 				static iPlanter;
@@ -115,13 +108,13 @@ public rt_revive_end(const iEnt, const id, const activator, const modes_struct:m
 		}
 		case MODE_PLANT:
 		{
-			client_print_color(activator, print_team_blue, "%L %L", activator, "RT_CHAT_TAG", activator, "RT_PLANTING", id);
+			UTIL_NotifyClient(iActivator, print_team_blue, "RT_PLANTING", id);
 			
-			g_ePlayerData[activator][PLANTING_COUNT]++;
+			g_ePlayerData[iActivator][PLANTING_COUNT]++;
 
 			set_entvar(iEnt, var_iuser1, 0);
-			set_entvar(iEnt, var_iuser3, mode);
-			set_entvar(iEnt, var_iuser4, activator);
+			set_entvar(iEnt, var_iuser3, eMode);
+			set_entvar(iEnt, var_iuser4, iActivator);
 		}
 	}
 }
@@ -133,7 +126,7 @@ stock UTIL_MakeExplosionEffects(const Float:vecOrigin[3])
 	write_coord_f(vecOrigin[0]);
 	write_coord_f(vecOrigin[1]);
 	write_coord_f(vecOrigin[2] + 20.0);
-	write_short(g_szModels[FireBall3]);
+	write_short(g_szModels[2]);
 	write_byte(25);
 	write_byte(30);
 	write_byte(TE_EXPLFLAG_NONE);
@@ -144,51 +137,24 @@ stock UTIL_MakeExplosionEffects(const Float:vecOrigin[3])
 	write_coord_f(vecOrigin[0] + random_float(-64.0, 64.0));
 	write_coord_f(vecOrigin[1] + random_float(-64.0, 64.0));
 	write_coord_f(vecOrigin[2] + random_float(30.0, 35.0));
-	write_short(g_szModels[FireBall2]);
+	write_short(g_szModels[1]);
 	write_byte(30);
 	write_byte(30);
 	write_byte(TE_EXPLFLAG_NONE);
 	message_end();
-	
-	message_begin_f(MSG_PAS, SVC_TEMPENTITY, vecOrigin);
-	write_byte(TE_SPRITE);
-	write_coord_f(vecOrigin[0] + random_float(-256.0, 256.0));
-	write_coord_f(vecOrigin[1] + random_float(-256.0, 256.0));
-	write_coord_f(vecOrigin[2] + random_float(-10.0, 10.0));
-	write_short(g_szModels[FireBall2]);
-	write_byte(30);
-	write_byte(150);
-	message_end();
-	
-	message_begin_f(MSG_PAS, SVC_TEMPENTITY, vecOrigin);
-	write_byte(TE_SPRITE);
-	write_coord_f(vecOrigin[0] + random_float(-256.0, 256.0));
-	write_coord_f(vecOrigin[1] + random_float(-256.0, 256.0));
-	write_coord_f(vecOrigin[2] + random_float(-10.0, 10.0));
-	write_short(g_szModels[FireBall2]);
-	write_byte(30);
-	write_byte(150);
-	message_end();
-	
-	message_begin_f(MSG_PAS, SVC_TEMPENTITY, vecOrigin);
-	write_byte(TE_SPRITE);
-	write_coord_f(vecOrigin[0] + random_float(-256.0, 256.0));
-	write_coord_f(vecOrigin[1] + random_float(-256.0, 256.0));
-	write_coord_f(vecOrigin[2] + random_float(-10.0, 10.0));
-	write_short(g_szModels[FireBall3]);
-	write_byte(30);
-	write_byte(150);
-	message_end();
-	
-	message_begin_f(MSG_PAS, SVC_TEMPENTITY, vecOrigin);
-	write_byte(TE_SPRITE);
-	write_coord_f(vecOrigin[0] + random_float(-256.0, 256.0));
-	write_coord_f(vecOrigin[1] + random_float(-256.0, 256.0));
-	write_coord_f(vecOrigin[2] + random_float(-10.0, 10.0));
-	write_short(g_szModels[FireBall1]);
-	write_byte(30);
-	write_byte(17);
-	message_end();
+
+	for(new i; i < 3; i++)
+	{
+		message_begin_f(MSG_PAS, SVC_TEMPENTITY, vecOrigin);
+		write_byte(TE_SPRITE);
+		write_coord_f(vecOrigin[0] + random_float(-256.0, 256.0));
+		write_coord_f(vecOrigin[1] + random_float(-256.0, 256.0));
+		write_coord_f(vecOrigin[2] + random_float(-10.0, 10.0));
+		write_short(g_szModels[i]);
+		write_byte(30);
+		write_byte(150);
+		message_end();
+	}
 }
 
 public RegisterCvars()

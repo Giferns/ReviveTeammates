@@ -12,7 +12,7 @@
 #include <hamsandwich>
 #include <reapi>
 
-#define VERSION "1.0.0"
+#define VERSION "1.1.0"
 #define AUTHORS "ufame & Albertio"
 
 enum modes_struct
@@ -29,63 +29,63 @@ new const DEAD_BODY_CLASSNAME[] = "rt_corpse_empty";
 *
 * @param iEnt       corpse entity index
 * @param id         player id who can be revived
-* @param activator  player id who can revive
-* @param mode       MODE_REVIVE - started the resurrection, MODE_PLANT - started planting
+* @param iActivator player id who can revive
+* @param eMode      MODE_REVIVE - started the resurrection, MODE_PLANT - started planting
 *
 */
-forward rt_revive_start(const iEnt, const id, const activator, const modes_struct:mode);
+forward rt_revive_start(const iEnt, const id, const iActivator, const modes_struct:eMode);
 
 /**
 * PreThink on resurrection/planting
 *
 * @param iEnt       corpse entity index
 * @param id         player id who can be revived
-* @param activator  player id who can revive
+* @param iActivator player id who can revive
 * @param timer      time to revive id
-* @param mode       MODE_REVIVE - the player continues to be resurrected, MODE_PLANT - the player continues to be planted
+* @param eMode      MODE_REVIVE - the player continues to be resurrected, MODE_PLANT - the player continues to be planted
 *
 * @note Can stoped by return PLUGIN_HANDLED
 *
 * @note timer can be 0.0
 *
 */
-forward rt_revive_loop_pre(const iEnt, const id, const activator, const Float:timer, modes_struct:mode);
+forward rt_revive_loop_pre(const iEnt, const id, const iActivator, const Float:timer, modes_struct:eMode);
 
 /**
 * PostThink on resurrection/planting
 *
 * @param iEnt       corpse entity index
 * @param id         player id who can be revived
-* @param activator  player id who can revive
+* @param iActivator player id who can revive
 * @param timer      time to revive id
-* @param mode       MODE_REVIVE - the player continues to be resurrected, MODE_PLANT - the player continues to be planted
+* @param eMode      MODE_REVIVE - the player continues to be resurrected, MODE_PLANT - the player continues to be planted
 *
 * @note timer can't(!!!) be 0.0
 *
 */
-forward rt_revive_loop_post(const iEnt, const id, const activator, const Float:timer, modes_struct:mode);
+forward rt_revive_loop_post(const iEnt, const id, const iActivator, const Float:timer, modes_struct:eMode);
 
 /**
 * Called after the resurrection/planting is ending
 *
 * @param iEnt       corpse entity index
 * @param id         player id who can be revived
-* @param activator  player id who can revive
-* @param mode       MODE_REVIVE - the player was resurrected, MODE_PLANT - the player was planted
+* @param iActivator player id who can revive
+* @param eMode      MODE_REVIVE - the player was resurrected, MODE_PLANT - the player was planted
 *
 */
-forward rt_revive_end(const iEnt, const id, const activator, const modes_struct:mode);
+forward rt_revive_end(const iEnt, const id, const iActivator, const modes_struct:eMode);
 
 /**
 * Called when the player has stopped resurrecting/planting
 *
 * @param iEnt       corpse entity index
 * @param id         player id who can be revived
-* @param activator  player id who can revive
-* @param mode       MODE_REVIVE - stopped the resurrection, MODE_PLANT - stopped planting
+* @param iActivator player id who can revive
+* @param eMode      MODE_REVIVE - stopped the resurrection, MODE_PLANT - stopped planting
 *
 */
-forward rt_revive_cancelled(const iEnt, const id, const activator, const modes_struct:mode);
+forward rt_revive_cancelled(const iEnt, const id, const iActivator, const modes_struct:eMode);
 
 /**
 * Called before a corpse is created
@@ -101,10 +101,10 @@ forward rt_creating_corpse_start(const iEnt, const id);
 *
 * @param iEnt    corpse entity index
 * @param id      id of the player whose corpse
-* @param origin  coordinates of the corpse
+* @param vOrigin  coordinates of the corpse
 *
 */
-forward rt_creating_corpse_end(const iEnt, const id, const origin[3]);
+forward rt_creating_corpse_end(const iEnt, const id, const vOrigin[3]);
 
 /*
 * Removal of corpses
@@ -113,6 +113,7 @@ stock UTIL_RemoveCorpses(const id = 0, const szClassName[] = DEAD_BODY_CLASSNAME
 {
 	static iEnt, iActivator;
 	iEnt = NULLENT;
+	iActivator = 0;
 
 	while((iEnt = rg_find_ent_by_class(iEnt, szClassName)) > 0)
 	{
@@ -121,12 +122,14 @@ stock UTIL_RemoveCorpses(const id = 0, const szClassName[] = DEAD_BODY_CLASSNAME
 			if(id && get_entvar(iEnt, var_owner) != id)
 				continue;
 
-			iActivator = get_entvar(iEnt, var_iuser1);
+			if(id && get_entvar(iEnt, var_owner) == id)
+				iActivator = get_entvar(iEnt, var_iuser1);
 			
 			set_entvar(iEnt, var_flags, FL_KILLME);
-			set_entvar(iEnt, var_nextthink, -1.0);
+			set_entvar(iEnt, var_nextthink, 0.0);
 
-			return iActivator;
+			if(iActivator)
+				return iActivator;
 		}
 	}
 
@@ -136,7 +139,7 @@ stock UTIL_RemoveCorpses(const id = 0, const szClassName[] = DEAD_BODY_CLASSNAME
 /*
 * Reset entity think
 */
-stock UTIL_ResetEntityThink(const eForward, const iEnt, const id, const activator, const modes_struct:mode)
+stock UTIL_ResetEntityThink(const eForward, const iEnt, const id, const iActivator, const modes_struct:eMode)
 {
 	if(iEnt != NULLENT)
 	{
@@ -144,7 +147,7 @@ stock UTIL_ResetEntityThink(const eForward, const iEnt, const id, const activato
 		set_entvar(iEnt, var_iuser1, 0);
 	}
 
-	ExecuteForward(eForward, _, iEnt, UTIL_IsUserConnected(id), UTIL_IsUserConnected(activator), mode);
+	ExecuteForward(eForward, _, iEnt, UTIL_IsUserConnected(id), UTIL_IsUserConnected(iActivator), eMode);
 }
 
 /*
@@ -153,6 +156,17 @@ stock UTIL_ResetEntityThink(const eForward, const iEnt, const id, const activato
 stock UTIL_IsUserConnected(const id)
 {
 	return (is_user_connected(id) ? id : NULLENT);
+}
+
+/*
+* Notifying players in chat
+*/
+stock UTIL_NotifyClient(const id, const eColorNum, const szLangMessage[], const iMessageArg = 0)
+{
+	if(iMessageArg)
+		client_print_color(id, eColorNum, "%L%L", id, "RT_CHAT_TAG", id, szLangMessage, iMessageArg);
+	else
+		client_print_color(id, eColorNum, "%L%L", id, "RT_CHAT_TAG", id, szLangMessage);
 }
 
 /*

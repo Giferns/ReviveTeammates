@@ -40,16 +40,13 @@ public plugin_init()
 	
 	if(g_eCvars[TIMER_TYPE] == 0)
 		g_iHudSyncObj = CreateHudSyncObj();
-}
 
-public plugin_cfg()
-{
 	g_eTimeData[GLOBAL_TIME] = get_pcvar_float(get_cvar_pointer("rt_revive_time"));
 	g_eTimeData[CEIL_TIME] = floatround(g_eTimeData[GLOBAL_TIME], floatround_ceil);
 	g_eTimeData[START_TIME] = floatround((1.0 - g_eTimeData[GLOBAL_TIME] / g_eTimeData[CEIL_TIME]) * 100);
 }
 
-public rt_revive_start(const iEnt, const id, const activator, const modes_struct:mode)
+public rt_revive_start(const iEnt, const id, const iActivator, const modes_struct:eMode)
 {
 	switch(g_eCvars[TIMER_TYPE])
 	{
@@ -62,56 +59,51 @@ public rt_revive_start(const iEnt, const id, const activator, const modes_struct
 
 			add(g_szTimer[id], charsmax(g_szTimer[]), TIMER_END);
 
-			DisplayHUDMessage(activator, id, mode);
+			DisplayHUDMessage(iActivator, id, eMode);
 		}
 		case 1:
 		{
-			rg_send_bartime2(activator, g_eTimeData[CEIL_TIME], g_eTimeData[START_TIME]);
+			rg_send_bartime2(iActivator, g_eTimeData[CEIL_TIME], g_eTimeData[START_TIME]);
 
-			if(mode == MODE_REVIVE)
+			if(eMode == MODE_REVIVE && is_user_connected(id))
 				rg_send_bartime2(id, g_eTimeData[CEIL_TIME], g_eTimeData[START_TIME]);
 		}
 	}
-
-	return PLUGIN_CONTINUE;
 }
 
-public rt_revive_loop_post(const iEnt, const id, const activator, const Float:timer, modes_struct:mode)
+public rt_revive_loop_post(const iEnt, const id, const iActivator, const Float:timer, modes_struct:eMode)
 {
 	if(g_eCvars[TIMER_TYPE] == 0)
 	{
 		replace(g_szTimer[id], charsmax(g_szTimer[]), TIMER_REPLACE_SYMB, TIMER_REPLACE_WITH);
 
-		DisplayHUDMessage(activator, id, mode);
+		DisplayHUDMessage(iActivator, id, eMode);
 	}
 }
 
-public rt_revive_cancelled(const iEnt, const id, const activator, const modes_struct:mode)
+public rt_revive_cancelled(const iEnt, const id, const iActivator, const modes_struct:eMode)
 {
 	switch(g_eCvars[TIMER_TYPE])
 	{
 		case 0:
 		{
-			if(activator != NULLENT)
-				ClearSyncHud(activator, g_iHudSyncObj);
+			if(iActivator != NULLENT)
+				ClearSyncHud(iActivator, g_iHudSyncObj);
 		}
 		case 1:
 		{
-			if(activator != NULLENT)
-				rg_send_bartime(activator, 0);
+			if(iActivator != NULLENT)
+				rg_send_bartime(iActivator, 0);
 			
-			if(mode == MODE_REVIVE)
-			{
-				if(id != NULLENT)
-					rg_send_bartime(id, 0);
-			}
+			if(eMode == MODE_REVIVE && id != NULLENT)
+				rg_send_bartime(id, 0);
 		}
 	}
 }
 
-stock DisplayHUDMessage(id, dead, const modes_struct:mode)
+stock DisplayHUDMessage(id, dead, const modes_struct:eMode)
 {
-	switch(mode)
+	switch(eMode)
 	{
 		case MODE_REVIVE: set_hudmessage(0, 255, 0, -1.0, 0.61, .holdtime = g_eTimeData[GLOBAL_TIME]);
 		case MODE_PLANT: set_hudmessage(255, 0, 0, -1.0, 0.61, .holdtime = g_eTimeData[GLOBAL_TIME]);

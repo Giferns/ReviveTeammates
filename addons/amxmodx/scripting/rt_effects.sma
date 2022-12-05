@@ -64,24 +64,24 @@ public AddToFullPack_Post(es, e, ent, host, flags, player, pSet)
 	return FMRES_IGNORED;
 }
 
-public rt_revive_start(const iEnt, const id, const activator, const modes_struct:mode)
+public rt_revive_start(const iEnt, const id, const iActivator, const modes_struct:eMode)
 {
-	switch(mode)
+	switch(eMode)
 	{
 		case MODE_REVIVE:
 		{
 			if(g_eCvars[SPECTATOR])
 			{
 				rg_internal_cmd(id, "specmode", "4");
-				set_entvar(id, var_iuser2, activator);
-				set_member(id, m_hObserverTarget, activator);
+				set_entvar(id, var_iuser2, iActivator);
+				set_member(id, m_hObserverTarget, iActivator);
 				set_member(id, m_flNextObserverInput, get_gametime() + 1.25);
 			}
 
 			if(g_eCvars[NOTIFY_DHUD])
 			{
-				DisplayDHUDMessage(activator, fmt("%L", activator, "RT_DHUD_REVIVE", id), mode);
-				DisplayDHUDMessage(id, fmt("%L %L", id, "RT_CHAT_TAG", id, "RT_DHUD_REVIVE2", activator), mode);
+				DisplayDHUDMessage(iActivator, fmt("%L", iActivator, "RT_DHUD_REVIVE", id), eMode);
+				DisplayDHUDMessage(id, fmt("%L %L", id, "RT_CHAT_TAG", id, "RT_DHUD_REVIVE2", iActivator), eMode);
 			}
 			
 			if(g_eCvars[REVIVE_GLOW][0] != EOS)
@@ -90,7 +90,7 @@ public rt_revive_start(const iEnt, const id, const activator, const modes_struct
 		case MODE_PLANT:
 		{
 			if(g_eCvars[NOTIFY_DHUD])
-				DisplayDHUDMessage(activator, fmt("%L", activator, "RT_DHUD_PLANTING", id), mode);
+				DisplayDHUDMessage(iActivator, fmt("%L", iActivator, "RT_DHUD_PLANTING", id), eMode);
 			
 			if(g_eCvars[PLANTING_GLOW][0] != EOS)
 				rg_set_rendering(iEnt, kRenderFxGlowShell, g_eGlowColors[PLANTING_COLOR], kRenderNormal, 30.0);
@@ -100,9 +100,9 @@ public rt_revive_start(const iEnt, const id, const activator, const modes_struct
 	return PLUGIN_CONTINUE;
 }
 
-public rt_revive_cancelled(const iEnt, const id, const activator, const modes_struct:mode)
+public rt_revive_cancelled(const iEnt, const id, const iActivator, const modes_struct:eMode)
 {
-	switch(mode)
+	switch(eMode)
 	{
 		case MODE_REVIVE:
 		{
@@ -118,17 +118,17 @@ public rt_revive_cancelled(const iEnt, const id, const activator, const modes_st
 
 	if(g_eCvars[NOTIFY_DHUD])
 	{
-		if(activator != NULLENT)
-			ClearDHUDMessages(activator);
+		if(iActivator != NULLENT)
+			ClearDHUDMessages(iActivator);
 
 		if(id != NULLENT)
 			ClearDHUDMessages(id);
 	}
 }
 
-public rt_revive_end(const iEnt, const id, const activator, const modes_struct:mode)
+public rt_revive_end(const iEnt, const id, const iActivator, const modes_struct:eMode)
 {
-	switch(mode)
+	switch(eMode)
 	{
 		case MODE_REVIVE:
 		{
@@ -147,7 +147,7 @@ public rt_revive_end(const iEnt, const id, const activator, const modes_struct:m
 
 	if(g_eCvars[NOTIFY_DHUD])
 	{
-		ClearDHUDMessages(activator);
+		ClearDHUDMessages(iActivator);
 		ClearDHUDMessages(id);
 	}
 }
@@ -233,9 +233,9 @@ stock parseHex(const ch)
 	return 0;
 }
 
-stock DisplayDHUDMessage(id, szMessage[], modes_struct:mode)
+stock DisplayDHUDMessage(id, szMessage[], modes_struct:eMode)
 {
-	switch(mode)
+	switch(eMode)
 	{
 		case MODE_REVIVE: set_dhudmessage(0, 255, 0, -1.0, 0.81, .holdtime = g_fTime);
 		case MODE_PLANT: set_dhudmessage(255, 0, 0, -1.0, 0.81, .holdtime = g_fTime);

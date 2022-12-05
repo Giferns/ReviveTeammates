@@ -49,107 +49,39 @@ public plugin_precache()
 	UploadConfigs();
 }
 
-public rt_revive_start(const iEnt, const id, const activator, const modes_struct:mode)
+public rt_revive_start(const iEnt, const id, const iActivator, const modes_struct:eMode)
 {
-	switch(mode)
+	switch(eMode)
 	{
-		case MODE_REVIVE:
-		{
-			if(g_iSounds[SECTION_REVIVE_START])
-			{
-				if(g_eCvars[NEARBY_PLAYERS] == 2)
-					PlaybackSoundNearbyPlayers(iEnt, g_szSounds[SECTION_REVIVE_START][random(g_iSounds[SECTION_REVIVE_START])]);
-				else if(!g_eCvars[NEARBY_PLAYERS])
-				{
-					rg_send_audio(activator, g_szSounds[SECTION_REVIVE_START][random(g_iSounds[SECTION_REVIVE_START])]);
-					rg_send_audio(id, g_szSounds[SECTION_REVIVE_START][random(g_iSounds[SECTION_REVIVE_START])]);
-				}
-			}
-		}
-		case MODE_PLANT:
-		{
-			if(g_iSounds[SECTION_PLANT_START])
-			{
-				if(g_eCvars[NEARBY_PLAYERS] == 2)
-					PlaybackSoundNearbyPlayers(iEnt, g_szSounds[SECTION_PLANT_START][random(g_iSounds[SECTION_PLANT_START])]);
-				else if(!g_eCvars[NEARBY_PLAYERS])
-				{
-					rg_send_audio(activator, g_szSounds[SECTION_PLANT_START][random(g_iSounds[SECTION_PLANT_START])]);
-					rg_send_audio(id, g_szSounds[SECTION_PLANT_START][random(g_iSounds[SECTION_PLANT_START])]);
-				}
-			}
-		}
+		case MODE_REVIVE: UTIL_PlaybackSound(iEnt, id, iActivator, SECTION_REVIVE_START);
+		case MODE_PLANT: UTIL_PlaybackSound(iEnt, id, iActivator, SECTION_PLANT_START);
 	}
 
 	return PLUGIN_CONTINUE;
 }
 
-public rt_revive_loop_post(const iEnt, const id, const activator, const Float:timer, modes_struct:mode)
+public rt_revive_loop_post(const iEnt, const id, const iActivator, const Float:timer, modes_struct:eMode)
 {
-	switch(mode)
+	switch(eMode)
 	{
-		case MODE_REVIVE:
-		{
-			if(g_iSounds[SECTION_REVIVE_LOOP])
-			{
-				if(g_eCvars[NEARBY_PLAYERS] == 2)
-					PlaybackSoundNearbyPlayers(iEnt, g_szSounds[SECTION_REVIVE_LOOP][random(g_iSounds[SECTION_REVIVE_LOOP])]);
-				else if(!g_eCvars[NEARBY_PLAYERS])
-				{
-					rg_send_audio(activator, g_szSounds[SECTION_REVIVE_LOOP][random(g_iSounds[SECTION_REVIVE_LOOP])]);
-					rg_send_audio(id, g_szSounds[SECTION_REVIVE_LOOP][random(g_iSounds[SECTION_REVIVE_LOOP])]);
-				}
-			}
-		}
-		case MODE_PLANT:
-		{
-			if(g_iSounds[SECTION_PLANT_LOOP])
-			{
-				if(g_eCvars[NEARBY_PLAYERS] == 2)
-					PlaybackSoundNearbyPlayers(iEnt, g_szSounds[SECTION_PLANT_LOOP][random(g_iSounds[SECTION_PLANT_LOOP])]);
-				else if(!g_eCvars[NEARBY_PLAYERS])
-				{
-					rg_send_audio(activator, g_szSounds[SECTION_PLANT_LOOP][random(g_iSounds[SECTION_PLANT_LOOP])]);
-					rg_send_audio(id, g_szSounds[SECTION_PLANT_LOOP][random(g_iSounds[SECTION_PLANT_LOOP])]);
-				}
-			}
-		}
+		case MODE_REVIVE: UTIL_PlaybackSound(iEnt, id, iActivator, SECTION_REVIVE_LOOP);
+		case MODE_PLANT: UTIL_PlaybackSound(iEnt, id, iActivator, SECTION_PLANT_LOOP);
 	}
 }
 
-public rt_revive_end(const iEnt, const id, const activator, const modes_struct:mode)
+public rt_revive_end(const iEnt, const id, const iActivator, const modes_struct:eMode)
 {
-	switch(mode)
+	switch(eMode)
 	{
 		case MODE_REVIVE:
 		{
 			static modes_struct:iMode;
 			iMode = get_entvar(iEnt, var_iuser3);
 			
-			if(iMode != MODE_PLANT && g_iSounds[SECTION_REVIVE_END])
-			{
-				if(g_eCvars[NEARBY_PLAYERS])
-					PlaybackSoundNearbyPlayers(iEnt, g_szSounds[SECTION_REVIVE_END][random(g_iSounds[SECTION_REVIVE_END])]);
-				else
-				{
-					rg_send_audio(activator, g_szSounds[SECTION_REVIVE_END][random(g_iSounds[SECTION_REVIVE_END])]);
-					rg_send_audio(id, g_szSounds[SECTION_REVIVE_END][random(g_iSounds[SECTION_REVIVE_END])]);
-				}
-			}
+			if(iMode != MODE_PLANT)
+				UTIL_PlaybackSound(iEnt, id, iActivator, SECTION_REVIVE_END);
 		}
-		case MODE_PLANT:
-		{
-			if(g_iSounds[SECTION_PLANT_END])
-			{
-				if(g_eCvars[NEARBY_PLAYERS])
-					PlaybackSoundNearbyPlayers(iEnt, g_szSounds[SECTION_PLANT_END][random(g_iSounds[SECTION_PLANT_END])]);
-				else
-				{
-					rg_send_audio(activator, g_szSounds[SECTION_PLANT_END][random(g_iSounds[SECTION_PLANT_END])]);
-					rg_send_audio(id, g_szSounds[SECTION_PLANT_END][random(g_iSounds[SECTION_PLANT_END])]);
-				}
-			}
-		}
+		case MODE_PLANT: UTIL_PlaybackSound(iEnt, id, iActivator, SECTION_PLANT_END);
 	}
 }
 
@@ -198,10 +130,8 @@ public ReadNewSection(INIParser:iParser, const szSection[], bool:invalid_tokens,
 public ReadValues(INIParser:iParser, const szKey[], const szValue[])
 {
 	new szSound[MAX_SOUND_LENGTH];
-
 	copy(szSound, charsmax(szSound), szKey);
 	trim(szSound);
-
 	copy(g_szSounds[g_eCurrentSection][g_iSounds[g_eCurrentSection]++], charsmax(g_szSounds[][]), szSound);
 	
 	precache_sound(szSound);
@@ -209,7 +139,21 @@ public ReadValues(INIParser:iParser, const szKey[], const szValue[])
 	return true;
 }
 
-stock PlaybackSoundNearbyPlayers(const id, szSound[])
+stock UTIL_PlaybackSound(const iEnt, const id, const iActivator, const sections_struct:iSoundSection)
+{
+	if(g_iSounds[iSoundSection])
+	{
+		if(g_eCvars[NEARBY_PLAYERS] == 2 || (g_eCvars[NEARBY_PLAYERS] && (iSoundSection == SECTION_REVIVE_END || iSoundSection == SECTION_PLANT_END)))
+			UTIL_PlaybackSoundNearbyPlayers(iEnt, g_szSounds[iSoundSection][random(g_iSounds[iSoundSection])]);
+		else if(!g_eCvars[NEARBY_PLAYERS])
+		{
+			rg_send_audio(iActivator, g_szSounds[iSoundSection][random(g_iSounds[iSoundSection])]);
+			rg_send_audio(id, g_szSounds[iSoundSection][random(g_iSounds[iSoundSection])]);
+		}
+	}
+}
+
+stock UTIL_PlaybackSoundNearbyPlayers(const id, szSound[])
 {
 	static iEnt;
 	iEnt = NULLENT
