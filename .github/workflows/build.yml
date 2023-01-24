@@ -52,7 +52,7 @@ jobs:
           echo "REAPI_INCLUDE_PATH=$(pwd)/addons/amxmodx/scripting/include" >> $GITHUB_ENV
 
       - name: Setup AMXXPawn Compiler
-        uses: wopox1337/setup-amxxpawn@v1
+        uses: wopox1337/setup-amxxpawn@v1.0.2
         with:
           version: "1.10"
 
