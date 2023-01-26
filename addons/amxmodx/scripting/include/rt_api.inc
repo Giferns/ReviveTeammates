@@ -7,11 +7,6 @@
 #endif
 #define _rt_api_included
 
-#include <amxmodx>
-#include <fakemeta>
-#include <hamsandwich>
-#include <reapi>
-
 #define VERSION "1.1.0"
 #define AUTHORS "ufame & Albertio"
 

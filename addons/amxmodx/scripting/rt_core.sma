@@ -1,3 +1,7 @@
+#include <amxmodx>
+#include <fakemeta>
+#include <hamsandwich>
+#include <reapi>
 #include <rt_api>
 
 enum CVARS

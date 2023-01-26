@@ -1,3 +1,5 @@
+#include <amxmodx>
+#include <reapi>
 #include <rt_api>
 
 #define m_iCurrentRound (get_member_game(m_iTotalRoundsPlayed) + 1)

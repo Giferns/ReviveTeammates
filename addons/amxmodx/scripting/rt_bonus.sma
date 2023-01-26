@@ -1,3 +1,6 @@
+#include <amxmodx>
+#include <hamsandwich>
+#include <reapi>
 #include <rt_api>
 
 #define MAX_SPAWN_WEAPONS 6
