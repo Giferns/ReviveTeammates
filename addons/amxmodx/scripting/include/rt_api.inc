@@ -7,7 +7,7 @@
 #endif
 #define _rt_api_included
 
-#define VERSION "1.1.0"
+#define VERSION "1.1.1"
 #define AUTHORS "ufame & Albertio"
 
 enum modes_struct
@@ -119,7 +119,7 @@ stock UTIL_RemoveCorpses(const id = 0, const szClassName[] = DEAD_BODY_CLASSNAME
 
 			if(id && get_entvar(iEnt, var_owner) == id)
 				iActivator = get_entvar(iEnt, var_iuser1);
-			
+
 			set_entvar(iEnt, var_flags, FL_KILLME);
 			set_entvar(iEnt, var_nextthink, 0.0);
 
@@ -138,7 +138,7 @@ stock UTIL_ResetEntityThink(const eForward, const iEnt, const id, const iActivat
 {
 	if(iEnt != NULLENT)
 	{
-		set_entvar(iEnt, var_nextthink, 0.0);
+		set_entvar(iEnt, var_nextthink, get_gametime() + 1.0);
 		set_entvar(iEnt, var_iuser1, 0);
 	}
 
@@ -170,7 +170,7 @@ stock UTIL_NotifyClient(const id, const eColorNum, const szLangMessage[], const 
 stock UploadConfigs()
 {
 	new szPath[MAX_RESOURCE_PATH_LENGTH], szPlFileName[32];
-	
+
 	get_localinfo("amxx_configsdir", szPath, charsmax(szPath));
 	get_plugin(-1, szPlFileName, charsmax(szPlFileName));
 
