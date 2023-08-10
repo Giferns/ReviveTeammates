@@ -47,7 +47,7 @@ public plugin_init()
 
 	RegisterHookChain(RG_CSGameRules_CleanUpMap, "CSGameRules_CleanUpMap_Post", .post = 1);
 	RegisterHookChain(RG_CBasePlayer_UseEmpty, "CBasePlayer_UseEmpty_Pre", .post = 0);
-	
+
 	g_eForwards[ReviveStart] = CreateMultiForward("rt_revive_start", ET_STOP, FP_CELL, FP_CELL, FP_CELL, FP_CELL);
 	g_eForwards[ReviveLoop_Pre] = CreateMultiForward("rt_revive_loop_pre", ET_STOP, FP_CELL, FP_CELL, FP_CELL, FP_FLOAT, FP_CELL);
 	g_eForwards[ReviveLoop_Post] = CreateMultiForward("rt_revive_loop_post", ET_IGNORE, FP_CELL, FP_CELL, FP_CELL, FP_FLOAT, FP_CELL);
@@ -118,7 +118,7 @@ public Corpse_Use(const iEnt, const iActivator)
 
 	static modes_struct:eCurrentMode;
 	eCurrentMode = (iActTeam == iPlTeam) ? MODE_REVIVE : MODE_PLANT;
-	
+
 	if(g_iPluginLoaded == INVALID_PLUGIN_ID && eCurrentMode == MODE_PLANT)
 		return;
 
@@ -170,6 +170,7 @@ public Corpse_Use(const iEnt, const iActivator)
 	g_iTimeUntil[iActivator] = 0;
 
 	set_entvar(iEnt, var_iuser1, iActivator);
+	set_entvar(iEnt, var_iuser2, eCurrentMode);
 	set_entvar(iEnt, var_fuser1, flGameTime + g_eCvars[REVIVE_TIME]);
 	set_entvar(iEnt, var_fuser3, g_eCvars[REVIVE_TIME]);
 	set_entvar(iEnt, var_nextthink, flGameTime + 0.1);
@@ -184,25 +185,31 @@ public Corpse_Think(const iEnt)
 	iPlayer = get_entvar(iEnt, var_owner);
 	iActivator = get_entvar(iEnt, var_iuser1);
 
-	static TeamName:iActTeam, TeamName:iPlTeam, TeamName:iEntTeam;
-	iActTeam = get_member(iActivator, m_iTeam);
+	new Float:flGameTime = get_gametime();
+
+	if(!iActivator)
+	{
+		if(g_eCvars[CORPSE_TIME] && get_entvar(iEnt, var_fuser4) < flGameTime)
+		{
+			UTIL_RemoveCorpses(iPlayer, DEAD_BODY_CLASSNAME);
+			return;
+		}
+
+		set_entvar(iEnt, var_nextthink, flGameTime + 1.0);
+		return;
+	}
+
+	static TeamName:iPlTeam, TeamName:iEntTeam;
 	iPlTeam = get_member(iPlayer, m_iTeam);
 	iEntTeam = get_entvar(iEnt, var_team);
 
 	static modes_struct:eCurrentMode;
-	eCurrentMode = (iActTeam == iPlTeam) ? MODE_REVIVE : MODE_PLANT;
+	eCurrentMode = any:get_entvar(iEnt, var_iuser2);
 
 	if(iEntTeam != iPlTeam)
 	{
 		UTIL_NotifyClient(iActivator, print_team_red, "RT_CHANGE_TEAM");
-		return;
-	}
-
-	new Float:flGameTime = get_gametime();
-	
-	if(g_eCvars[CORPSE_TIME] && !iActivator && get_entvar(iEnt, var_fuser4) < flGameTime)
-	{
-		UTIL_RemoveCorpses(iPlayer, DEAD_BODY_CLASSNAME);
+		UTIL_ResetEntityThink(g_eForwards[ReviveCancelled], iEnt, iPlayer, iActivator, eCurrentMode);
 		return;
 	}
 
@@ -212,7 +219,7 @@ public Corpse_Think(const iEnt)
 		UTIL_ResetEntityThink(g_eForwards[ReviveCancelled], iEnt, iPlayer, iActivator, eCurrentMode);
 		return;
 	}
-	
+
 	static Float:flTimeUntil[2];
 	flTimeUntil[0] = Float:get_entvar(iEnt, var_fuser1);
 	flTimeUntil[1] = Float:get_entvar(iEnt, var_fuser3);
@@ -239,7 +246,7 @@ public Corpse_Think(const iEnt)
 			return;
 		}
 	}
-	
+
 	if(flGameTime > flTimeUntil[0])
 	{
 		new modes_struct:iMode = get_entvar(iEnt, var_iuser3);
@@ -257,7 +264,7 @@ public Corpse_Think(const iEnt)
 
 			engfunc(EngFunc_SetSize, iPlayer, Float:{-16.000000, -16.000000, -18.000000}, Float:{16.000000, 16.000000, 32.000000});
 			engfunc(EngFunc_SetOrigin, iPlayer, fOrigin);
-			
+
 			UTIL_RemoveCorpses(iPlayer, DEAD_BODY_CLASSNAME);
 		}
 
@@ -271,7 +278,7 @@ public Corpse_Think(const iEnt)
 
 		return;
 	}
-	
+
 	if(g_iTimeUntil[iActivator] == 10)
 	{
 		if(!is_user_alive(iActivator))
@@ -279,12 +286,12 @@ public Corpse_Think(const iEnt)
 			UTIL_ResetEntityThink(g_eForwards[ReviveCancelled], iEnt, iPlayer, iActivator, eCurrentMode);
 			return;
 		}
-		
+
 		ExecuteForward(g_eForwards[ReviveLoop_Post], _, iEnt, iPlayer, iActivator, flTimeUntil[1], eCurrentMode);
 
 		g_iTimeUntil[iActivator] = 0;
 	}
-	
+
 	set_entvar(iEnt, var_fuser3, flTimeUntil[1]);
 	set_entvar(iEnt, var_nextthink, flGameTime + 0.1);
 }
@@ -293,7 +300,7 @@ public MessageHook_ClCorpse()
 {
 	if(get_member_game(m_bRoundTerminating))
 		return PLUGIN_HANDLED;
-		
+
 	enum
 	{
 		arg_model = 1,
@@ -354,6 +361,7 @@ public MessageHook_ClCorpse()
 
 	set_entvar(iEnt, var_fuser2, g_eCvars[SEARCH_RADIUS]);
 
+	set_entvar(iEnt, var_nextthink, get_gametime() + 1.0);
 	SetThink(iEnt, "Corpse_Think");
 
 	if(g_eCvars[CORPSE_TIME])
