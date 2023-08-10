@@ -317,6 +317,15 @@ public MessageHook_ClCorpse()
 	if(iPlTeam == TEAM_SPECTATOR)
 		return PLUGIN_HANDLED;
 
+	static szTemp[MAX_RESOURCE_PATH_LENGTH], szModel[MAX_RESOURCE_PATH_LENGTH];
+	get_msg_arg_string(arg_model, szTemp, charsmax(szTemp));
+	formatex(szModel, charsmax(szModel), "models/player/%s/%s.mdl", szTemp, szTemp);
+
+	if(!file_exists(szModel)) {
+		//abort(AMX_ERR_GENERAL, "Can't find '%s'", szModel)
+		return PLUGIN_HANDLED;
+	}
+
 	static iEnt;
 	iEnt = rg_create_entity("info_target");
 
@@ -333,10 +342,6 @@ public MessageHook_ClCorpse()
 		set_entvar(iEnt, var_nextthink, -1.0);
 		return PLUGIN_HANDLED;
 	}
-
-	static szTemp[MAX_RESOURCE_PATH_LENGTH], szModel[MAX_RESOURCE_PATH_LENGTH];
-	get_msg_arg_string(arg_model, szTemp, charsmax(szTemp));
-	formatex(szModel, charsmax(szModel), "models/player/%s/%s.mdl", szTemp, szTemp);
 
 	engfunc(EngFunc_SetModel, iEnt, szModel);
 

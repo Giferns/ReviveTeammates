@@ -7,7 +7,7 @@
 #endif
 #define _rt_api_included
 
-#define VERSION "1.1.1"
+#define VERSION "1.1.2"
 #define AUTHORS "ufame & Albertio"
 
 enum modes_struct
