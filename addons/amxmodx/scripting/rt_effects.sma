@@ -7,21 +7,21 @@ enum CVARS
 {
 	SPECTATOR,
 	NOTIFY_DHUD,
-	REVIVE_GLOW[32],
-	PLANTING_GLOW[32],
+	//REVIVE_GLOW[32],
+	//PLANTING_GLOW[32],
 	CORPSE_SPRITE[64],
 	Float:SPRITE_SCALE
 };
 
 new g_eCvars[CVARS];
 
-enum GlowColors
+/*enum GlowColors
 {
 	Float:REVIVE_COLOR,
 	Float:PLANTING_COLOR
 };
 
-new Float:g_eGlowColors[GlowColors][3];
+new Float:g_eGlowColors[GlowColors][3];*/
 
 new const CORPSE_SPRITE_CLASSNAME[] = "rt_corpse_sprite";
 
@@ -47,11 +47,11 @@ public plugin_init()
 
 public plugin_cfg()
 {
-	if(g_eCvars[REVIVE_GLOW][0] != EOS)
+	/*if(g_eCvars[REVIVE_GLOW][0] != EOS)
 		g_eGlowColors[REVIVE_COLOR] = parseHEXColor(g_eCvars[REVIVE_GLOW]);
-	
+
 	if(g_eCvars[PLANTING_GLOW][0] != EOS)
-		g_eGlowColors[PLANTING_COLOR] = parseHEXColor(g_eCvars[PLANTING_GLOW]);
+		g_eGlowColors[PLANTING_COLOR] = parseHEXColor(g_eCvars[PLANTING_GLOW]);*/
 
 	g_fTime = get_pcvar_float(get_cvar_pointer("rt_revive_time"));
 }
@@ -86,17 +86,17 @@ public rt_revive_start(const iEnt, const id, const iActivator, const modes_struc
 				DisplayDHUDMessage(iActivator, fmt("%L", iActivator, "RT_DHUD_REVIVE", id), eMode);
 				DisplayDHUDMessage(id, fmt("%L %L", id, "RT_CHAT_TAG", id, "RT_DHUD_REVIVE2", iActivator), eMode);
 			}
-			
-			if(g_eCvars[REVIVE_GLOW][0] != EOS)
-				rg_set_rendering(iEnt, kRenderFxGlowShell, g_eGlowColors[REVIVE_COLOR], kRenderNormal, 30.0);
+
+			/*if(g_eCvars[REVIVE_GLOW][0] != EOS)
+				rg_set_rendering(iEnt, kRenderFxGlowShell, g_eGlowColors[REVIVE_COLOR], kRenderNormal, 30.0);*/
 		}
 		case MODE_PLANT:
 		{
 			if(g_eCvars[NOTIFY_DHUD])
 				DisplayDHUDMessage(iActivator, fmt("%L", iActivator, "RT_DHUD_PLANTING", id), eMode);
-			
-			if(g_eCvars[PLANTING_GLOW][0] != EOS)
-				rg_set_rendering(iEnt, kRenderFxGlowShell, g_eGlowColors[PLANTING_COLOR], kRenderNormal, 30.0);
+
+			/*if(g_eCvars[PLANTING_GLOW][0] != EOS)
+				rg_set_rendering(iEnt, kRenderFxGlowShell, g_eGlowColors[PLANTING_COLOR], kRenderNormal, 30.0);*/
 		}
 	}
 
@@ -105,7 +105,7 @@ public rt_revive_start(const iEnt, const id, const iActivator, const modes_struc
 
 public rt_revive_cancelled(const iEnt, const id, const iActivator, const modes_struct:eMode)
 {
-	switch(eMode)
+	/*switch(eMode)
 	{
 		case MODE_REVIVE:
 		{
@@ -117,7 +117,7 @@ public rt_revive_cancelled(const iEnt, const id, const iActivator, const modes_s
 			if(g_eCvars[PLANTING_GLOW][0] != EOS)
 				rg_set_rendering(iEnt);
 		}
-	}
+	}*/
 
 	if(g_eCvars[NOTIFY_DHUD])
 	{
@@ -131,13 +131,13 @@ public rt_revive_cancelled(const iEnt, const id, const iActivator, const modes_s
 
 public rt_revive_end(const iEnt, const id, const iActivator, const modes_struct:eMode)
 {
-	switch(eMode)
+	/*switch(eMode)
 	{
 		case MODE_REVIVE:
 		{
 			static modes_struct:iMode;
 			iMode = get_entvar(iEnt, var_iuser3);
-			
+
 			if(iMode != MODE_PLANT && g_eCvars[REVIVE_GLOW][0] != EOS)
 				rg_set_rendering(iEnt);
 		}
@@ -146,7 +146,7 @@ public rt_revive_end(const iEnt, const id, const iActivator, const modes_struct:
 			if(g_eCvars[PLANTING_GLOW][0] != EOS)
 				rg_set_rendering(iEnt);
 		}
-	}
+	}*/
 
 	if(g_eCvars[NOTIFY_DHUD])
 	{
@@ -277,7 +277,7 @@ public RegisterCvars()
 		1.0),
 		g_eCvars[NOTIFY_DHUD]
 	);
-	bind_pcvar_string(create_cvar(
+	/*bind_pcvar_string(create_cvar(
 		"rt_revive_glow",
 		"#5da130",
 		FCVAR_NONE,
@@ -292,7 +292,7 @@ public RegisterCvars()
 		"The color of the corpse being planted(HEX)"),
 		g_eCvars[PLANTING_GLOW],
 		charsmax(g_eCvars[PLANTING_GLOW])
-	);
+	);*/
 	bind_pcvar_string(create_cvar(
 		"rt_corpse_sprite",
 		"sprites/rt/corpse_sprite2.spr",

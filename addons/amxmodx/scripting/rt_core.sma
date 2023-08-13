@@ -303,7 +303,6 @@ public MessageHook_ClCorpse()
 
 	enum
 	{
-		arg_model = 1,
 		arg_body = 10,
 		arg_id = 12
 	};
@@ -316,15 +315,6 @@ public MessageHook_ClCorpse()
 
 	if(iPlTeam == TEAM_SPECTATOR)
 		return PLUGIN_HANDLED;
-
-	static szTemp[MAX_RESOURCE_PATH_LENGTH], szModel[MAX_RESOURCE_PATH_LENGTH];
-	get_msg_arg_string(arg_model, szTemp, charsmax(szTemp));
-	formatex(szModel, charsmax(szModel), "models/player/%s/%s.mdl", szTemp, szTemp);
-
-	if(!file_exists(szModel)) {
-		//abort(AMX_ERR_GENERAL, "Can't find '%s'", szModel)
-		return PLUGIN_HANDLED;
-	}
 
 	static iEnt;
 	iEnt = rg_create_entity("info_target");
@@ -343,7 +333,13 @@ public MessageHook_ClCorpse()
 		return PLUGIN_HANDLED;
 	}
 
-	engfunc(EngFunc_SetModel, iEnt, szModel);
+	static szModel[MAX_RESOURCE_PATH_LENGTH];
+
+	set_entvar(iEnt, var_modelindex, get_entvar(iPlayer, var_modelindex));
+	get_entvar(iPlayer, var_model, szModel, charsmax(szModel));
+	set_entvar(iEnt, var_model, szModel);
+	set_entvar(iEnt, var_renderfx, kRenderFxDeadPlayer);
+	set_entvar(iEnt, var_renderamt, float(iPlayer));
 
 	set_entvar(iEnt, var_classname, DEAD_BODY_CLASSNAME);
 	set_entvar(iEnt, var_body, get_msg_arg_int(arg_body));
