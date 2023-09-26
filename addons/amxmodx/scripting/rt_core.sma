@@ -333,12 +333,12 @@ public MessageHook_ClCorpse()
 		return PLUGIN_HANDLED;
 	}
 
-	static szModel[MAX_RESOURCE_PATH_LENGTH], szModelPath[MAX_RESOURCE_PATH_LENGTH];
+	static szModel[32], szModelPath[MAX_RESOURCE_PATH_LENGTH];
 
-	get_entvar(iPlayer, var_model, szModel, charsmax(szModel));
-	formatex(szModelPath, charsmax(szModelPath), "models/player/%s/%s.mdl" , szModel, szModel)
+	get_user_info(iPlayer, "model", szModel, charsmax(szModel));
+	formatex(szModelPath, charsmax(szModelPath), "models/player/%s/%s.mdl", szModel, szModel);
 	set_entvar(iEnt, var_modelindex, engfunc(EngFunc_ModelIndex, szModelPath));
-	set_entvar(iEnt, var_model, szModel);
+	set_entvar(iEnt, var_model, szModelPath);
 	set_entvar(iEnt, var_renderfx, kRenderFxDeadPlayer);
 	set_entvar(iEnt, var_renderamt, float(iPlayer));
 
