@@ -9,7 +9,8 @@ enum CVARS
 	Float:REVIVE_TIME,
 	Float:ANTIFLOOD_TIME,
 	Float:CORPSE_TIME,
-	Float:SEARCH_RADIUS
+	Float:SEARCH_RADIUS,
+	FORCE_FWD_MODE
 };
 
 new g_eCvars[CVARS];
@@ -226,7 +227,7 @@ public Corpse_Think(const iEnt)
 
 	g_iTimeUntil[iActivator]++;
 
-	if(g_iTimeUntil[iActivator] == 10)
+	if(g_iTimeUntil[iActivator] == 10 || g_eCvars[FORCE_FWD_MODE])
 	{
 		flTimeUntil[1] -= 1.0;
 
@@ -279,7 +280,7 @@ public Corpse_Think(const iEnt)
 		return;
 	}
 
-	if(g_iTimeUntil[iActivator] == 10)
+	if(g_iTimeUntil[iActivator] == 10 || g_eCvars[FORCE_FWD_MODE])
 	{
 		if(!is_user_alive(iActivator))
 		{
@@ -418,5 +419,16 @@ public RegisterCvars()
 		true,
 		1.0),
 		g_eCvars[SEARCH_RADIUS]
+	);
+	bind_pcvar_num(create_cvar(
+		"rt_force_fwd_mode",
+		"0",
+		FCVAR_NONE,
+		"Execute forwards more often. Set this to 1 if 'rt_no_move 1' didn't work properly.",
+		true,
+		0.0,
+		true,
+		1.0),
+		g_eCvars[FORCE_FWD_MODE]
 	);
 }
