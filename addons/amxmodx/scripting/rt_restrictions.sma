@@ -18,7 +18,8 @@ enum CVARS
 	WIN_DIFF,
 	REVIVE_COST,
 	PLANTING_COST,
-	Float:REMAINING_TIME
+	Float:REMAINING_TIME,
+	FORCE_FWD_MODE
 };
 
 new g_eCvars[CVARS];
@@ -48,7 +49,7 @@ public plugin_init()
 
 	RegisterHookChain(RG_CSGameRules_CleanUpMap, "CSGameRules_CleanUpMap_Post", .post = 1);
 	DisableHookChain(g_pHook_ResetMaxSpeed = RegisterHookChain(RG_CBasePlayer_ResetMaxSpeed, "CBasePlayer_ResetMaxSpeed_Post", .post = 1));
-	
+
 	g_iPreventFlags = (PLAYER_PREVENT_CLIMB|PLAYER_PREVENT_JUMP);
 }
 
@@ -107,13 +108,13 @@ public rt_revive_start(const iEnt, const id, const iActivator, const modes_struc
 		UTIL_NotifyClient(iActivator, print_team_red, "RT_DUEL");
 		return PLUGIN_HANDLED;
 	}
-	
+
 	if(g_eCvars[WIN_DIFF] && (rg_get_team_wins_row(g_eCvars[WIN_DIFF]) == TeamName:get_member(iActivator, m_iTeam)))
 	{
 		UTIL_NotifyClient(iActivator, print_team_red, "RT_WINS_DOMINATION");
 		return PLUGIN_HANDLED;
 	}
-	
+
 	if(g_eCvars[REMAINING_TIME] && rg_get_remaining_time() <= g_eCvars[REMAINING_TIME])
 	{
 		UTIL_NotifyClient(iActivator, print_team_red, "RT_REMAINING_TIME");
@@ -184,7 +185,7 @@ public rt_revive_loop_pre(const iEnt, const id, const iActivator, const Float:ti
 		UTIL_NotifyClient(iActivator, print_team_red, "RT_SURVIVOR");
 		return PLUGIN_HANDLED;
 	}
-	
+
 	if(g_eCvars[REMAINING_TIME] && rg_get_remaining_time() <= g_eCvars[REMAINING_TIME])
 	{
 		UTIL_NotifyClient(iActivator, print_team_red, "RT_REMAINING_TIME");
@@ -205,6 +206,14 @@ public rt_revive_loop_pre(const iEnt, const id, const iActivator, const Float:ti
 	}
 
 	return PLUGIN_CONTINUE;
+}
+
+public rt_revive_loop_post(const iEnt, const id, const iActivator, const Float:timer, modes_struct:eMode)
+{
+	if(g_eCvars[FORCE_FWD_MODE] && g_eCvars[NO_MOVE] == 1)
+	{
+		set_entvar(iActivator, var_maxspeed, 1.0);
+	}
 }
 
 public rt_revive_cancelled(const iEnt, const id, const iActivator, const modes_struct:eMode)
@@ -275,7 +284,7 @@ stock TeamName:rg_get_team_wins_row(const iWins)
 		return TEAM_TERRORIST;
 	else if(get_member_game(m_iNumConsecutiveTerroristLoses) >= iWins)
 		return TEAM_CT;
-	
+
 	return TEAM_UNASSIGNED;
 }
 
@@ -407,4 +416,10 @@ public RegisterCvars()
 		0.0),
 		g_eCvars[REMAINING_TIME]
 	);
+
+	new pCvar = get_cvar_pointer("rt_force_fwd_mode");
+	if(pCvar)
+	{
+		bind_pcvar_num(pCvar, g_eCvars[FORCE_FWD_MODE]);
+	}
 }
