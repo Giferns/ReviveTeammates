@@ -31,7 +31,7 @@ new g_eForwards[Forwards];
 new g_iPluginLoaded;
 
 new Float:g_flLastUse[MAX_PLAYERS + 1], g_iTimeUntil[MAX_PLAYERS + 1];
-
+new HookChain:g_iGetPlayerSpawnSpot_HookChain, Float:g_fSpawnOrigin[3];
 public plugin_precache()
 {
 	RegisterCvars();
@@ -48,6 +48,8 @@ public plugin_init()
 
 	RegisterHookChain(RG_CSGameRules_CleanUpMap, "CSGameRules_CleanUpMap_Post", .post = 1);
 	RegisterHookChain(RG_CBasePlayer_UseEmpty, "CBasePlayer_UseEmpty_Pre", .post = 0);
+	g_iGetPlayerSpawnSpot_HookChain = RegisterHookChain(RG_CSGameRules_GetPlayerSpawnSpot, "CSGameRules_GetPlayerSpawnSpot_Pre", .post = 0);
+	DisableHookChain(g_iGetPlayerSpawnSpot_HookChain);
 
 	g_eForwards[ReviveStart] = CreateMultiForward("rt_revive_start", ET_STOP, FP_CELL, FP_CELL, FP_CELL, FP_CELL);
 	g_eForwards[ReviveLoop_Pre] = CreateMultiForward("rt_revive_loop_pre", ET_STOP, FP_CELL, FP_CELL, FP_CELL, FP_FLOAT, FP_CELL);
@@ -102,6 +104,31 @@ public CBasePlayer_UseEmpty_Pre(const iActivator)
 			}
 		}
 	}
+}
+
+public CSGameRules_GetPlayerSpawnSpot_Pre(const iPlayer)
+{
+	DisableHookChain(g_iGetPlayerSpawnSpot_HookChain);
+
+	set_entvar(iPlayer, var_flags, get_entvar(iPlayer, var_flags) | FL_DUCKING);
+
+	// https://github.com/s1lentq/ReGameDLL_CS/blob/6c9019bcc85408b7c0d93cbf4a8a8a605a973eff/regamedll/dlls/gamerules.cpp#L63
+	set_entvar(iPlayer, var_velocity, NULL_VECTOR);
+	set_entvar(iPlayer, var_v_angle, NULL_VECTOR);
+
+	new Float:fAngles[3];
+	get_entvar(iPlayer, var_angles, fAngles);
+	fAngles[0] = fAngles[2] = 0.0;
+	set_entvar(iPlayer, var_angles, fAngles);
+
+	set_entvar(iPlayer, var_punchangle, NULL_VECTOR);
+	set_entvar(iPlayer, var_fixangle, 1);
+
+	engfunc(EngFunc_SetSize, iPlayer, Float:{-16.000000, -16.000000, -18.000000}, Float:{16.000000, 16.000000, 32.000000});
+	engfunc(EngFunc_SetOrigin, iPlayer, g_fSpawnOrigin);
+
+	SetHookChainReturn(ATYPE_INTEGER, NULLENT);
+	return HC_SUPERCEDE;
 }
 
 public Corpse_Use(const iEnt, const iActivator)
@@ -257,14 +284,18 @@ public Corpse_Think(const iEnt)
 			UTIL_NotifyClient(iActivator, print_team_blue, "RT_REVIVE", iPlayer);
 			UTIL_NotifyClient(iPlayer, print_team_blue, "RT_REVIVED", iActivator);
 
+			get_entvar(iActivator, var_origin, g_fSpawnOrigin);
+
+			EnableHookChain(g_iGetPlayerSpawnSpot_HookChain);
 			rg_round_respawn(iPlayer);
+			DisableHookChain(g_iGetPlayerSpawnSpot_HookChain);
 
-			static Float:fOrigin[3];
-			get_entvar(iActivator, var_origin, fOrigin);
-			set_entvar(iPlayer, var_flags, get_entvar(iPlayer, var_flags) | FL_DUCKING);
+			if(is_user_alive(iPlayer)) {
+				//set_entvar(iPlayer, var_flags, get_entvar(iPlayer, var_flags) | FL_DUCKING);
 
-			engfunc(EngFunc_SetSize, iPlayer, Float:{-16.000000, -16.000000, -18.000000}, Float:{16.000000, 16.000000, 32.000000});
-			engfunc(EngFunc_SetOrigin, iPlayer, fOrigin);
+				//engfunc(EngFunc_SetSize, iPlayer, Float:{-16.000000, -16.000000, -18.000000}, Float:{16.000000, 16.000000, 32.000000});
+				engfunc(EngFunc_SetOrigin, iPlayer, g_fSpawnOrigin); // NOTE: do not disable/remove this, i (mx?!) hope it will fix bug when player get wrong origin after spawn
+			}
 
 			UTIL_RemoveCorpses(iPlayer, DEAD_BODY_CLASSNAME);
 		}
