@@ -288,7 +288,6 @@ public Corpse_Think(const iEnt)
 
 			EnableHookChain(g_iGetPlayerSpawnSpot_HookChain);
 			rg_round_respawn(iPlayer);
-			DisableHookChain(g_iGetPlayerSpawnSpot_HookChain);
 
 			if(is_user_alive(iPlayer)) {
 				//set_entvar(iPlayer, var_flags, get_entvar(iPlayer, var_flags) | FL_DUCKING);
