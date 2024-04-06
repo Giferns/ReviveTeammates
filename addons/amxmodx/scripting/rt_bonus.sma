@@ -39,7 +39,7 @@ public plugin_init() {
 }
 
 public plugin_cfg() {
-	new szMapName[MAX_MAPNAME_LEN], szWeapon[32];
+	new szMapName[MAX_MAPNAME_LENGTH], szWeapon[32];
 	get_mapname(szMapName, charsmax(szMapName));
 	
 	if(g_eCvars[WEAPONS_MAPS][0] != EOS && containi(szMapName, "awp_") != -1) {
