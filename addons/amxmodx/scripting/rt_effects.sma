@@ -11,11 +11,11 @@ new const CORPSE_SPRITE_CLASSNAME[] = "rt_corpse_sprite";
 enum CVARS {
 	SPECTATOR,
 	NOTIFY_DHUD,
-	REVIVE_COLORS[16],
-	REVIVE_COORDS[16],
-	PLANTING_COLORS[16],
-	PLANTING_COORDS[16],
-	CORPSE_SPRITE[64],
+	REVIVE_COLORS[MAX_COLORS_LENGTH],
+	REVIVE_COORDS[MAX_COORDS_LENGTH],
+	PLANTING_COLORS[MAX_COLORS_LENGTH],
+	PLANTING_COORDS[MAX_COORDS_LENGTH],
+	CORPSE_SPRITE[MAX_RESOURCE_PATH_LENGTH],
 	Float:SPRITE_SCALE
 };
 
@@ -76,7 +76,8 @@ public plugin_init() {
 
 	register_dictionary("rt_library.txt");
 
-	register_forward(FM_AddToFullPack, "AddToFullPack_Pre", false);
+	if(g_eCvars[CORPSE_SPRITE][0] != EOS)
+		register_forward(FM_AddToFullPack, "AddToFullPack_Pre", false);
 }
 
 public plugin_cfg() {
@@ -84,7 +85,7 @@ public plugin_cfg() {
 }
 
 public AddToFullPack_Pre(es, e, ent, host, flags, player, pSet) {
-	if(g_eCvars[CORPSE_SPRITE][0] == EOS || player || !FClassnameIs(ent, CORPSE_SPRITE_CLASSNAME))
+	if(player || !FClassnameIs(ent, CORPSE_SPRITE_CLASSNAME))
 		return FMRES_IGNORED;
 
 	if(TeamName:get_entvar(ent, var_team) != TeamName:get_member(host, m_iTeam)) {
@@ -135,30 +136,31 @@ public rt_revive_end(const iEnt, const id, const iActivator, const Modes:eMode) 
 }
 
 public rt_creating_corpse_end(const iEnt, const id, const origin[3]) {
-	if(g_eCvars[CORPSE_SPRITE][0] != EOS) {
-		new iEntSprite = rg_create_entity("info_target");
+	if(g_eCvars[CORPSE_SPRITE][0] == EOS)
+		return;
 
-		new Float:fOrigin[3];
+	new iEntSprite = rg_create_entity("info_target");
 
-		for(new i; i < 3; i++)
-			fOrigin[i] = float(origin[i]);
+	new Float:fOrigin[3];
 
-		engfunc(EngFunc_SetOrigin, iEntSprite, fOrigin);
-		engfunc(EngFunc_SetModel, iEntSprite, g_eCvars[CORPSE_SPRITE]);
+	for(new i; i < 3; i++)
+		fOrigin[i] = float(origin[i]);
 
-		set_entvar(iEntSprite, var_classname, CORPSE_SPRITE_CLASSNAME);
-		set_entvar(iEntSprite, var_owner, id);
-		set_entvar(iEntSprite, var_iuser1, iEnt);
-		set_entvar(iEntSprite, var_team, TeamName:get_entvar(iEnt, var_team));
-		set_entvar(iEntSprite, var_scale, g_eCvars[SPRITE_SCALE]);
-		set_entvar(iEntSprite, var_renderfx, kRenderFxNone);
-		set_entvar(iEntSprite, var_rendercolor, Float:{255.0, 255.0, 255.0});
-		set_entvar(iEntSprite, var_rendermode, kRenderTransAlpha);
-		set_entvar(iEntSprite, var_renderamt, 255.0);
-		set_entvar(iEntSprite, var_nextthink, get_gametime() + 0.1);
+	engfunc(EngFunc_SetOrigin, iEntSprite, fOrigin);
+	engfunc(EngFunc_SetModel, iEntSprite, g_eCvars[CORPSE_SPRITE]);
 
-		SetThink(iEntSprite, "Corpse_Sprite_Think");
-	}
+	set_entvar(iEntSprite, var_classname, CORPSE_SPRITE_CLASSNAME);
+	set_entvar(iEntSprite, var_owner, id);
+	set_entvar(iEntSprite, var_iuser1, iEnt);
+	set_entvar(iEntSprite, var_team, TeamName:get_entvar(iEnt, var_team));
+	set_entvar(iEntSprite, var_scale, g_eCvars[SPRITE_SCALE]);
+	set_entvar(iEntSprite, var_renderfx, kRenderFxNone);
+	set_entvar(iEntSprite, var_rendercolor, Float:{255.0, 255.0, 255.0});
+	set_entvar(iEntSprite, var_rendermode, kRenderTransAlpha);
+	set_entvar(iEntSprite, var_renderamt, 255.0);
+	set_entvar(iEntSprite, var_nextthink, get_gametime() + 0.1);
+
+	SetThink(iEntSprite, "Corpse_Sprite_Think");
 }
 
 public Corpse_Sprite_Think(const iEnt) {
@@ -171,7 +173,7 @@ public Corpse_Sprite_Think(const iEnt) {
 }
 
 stock DisplayDHUDMessage(const id, const szFmtRules[], const Modes:eMode, any:...) {
-	new szMessage[192];
+	new szMessage[MAX_MESSAGE_LENGTH];
 	SetGlobalTransTarget(id);
 	vformat(szMessage, charsmax(szMessage), szFmtRules, 4);
 

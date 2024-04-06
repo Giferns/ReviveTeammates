@@ -9,117 +9,148 @@
 #endif
 #define _rt_api_included
 
-public stock const VERSION[] = "1.2.0";
+public stock const VERSION[] = "1.2.1";
 public stock const AUTHORS[] = "DEV-CS.RU Community";
 
+/**
+ * Invalid entity index
+ */
 #define RT_NULLENT -1
 
+/**
+ * The maximum buffer size required to store a chat message
+ */
+#define MAX_MESSAGE_LENGTH 192
+
+/**
+ * The maximum buffer size required to store a map's name
+ */
+#if !defined MAX_MAPNAME_LENGTH
+	#define MAX_MAPNAME_LENGTH 64
+#endif
+
+/**
+ * The maximum buffer size required to store a HUD/DHUD colors
+ */
+#define MAX_COLORS_LENGTH 16
+
+/**
+ * The maximum buffer size required to store a HUD/DHUD coordinates
+ */
+#define MAX_COORDS_LENGTH 16
+
+/**
+ * Types of resurrection
+ */
 enum Modes {
 	MODE_NONE = 0,
 	MODE_REVIVE,
 	MODE_PLANT
 };
 
+/**
+ * The classname of the corpse entity
+ */
 new const DEAD_BODY_CLASSNAME[] = "rt_corpse_empty";
 
 /**
-* Called after the activator starts resurrection/planting (on press USE - `E`)
-*
-* @param iEnt           Corpse entity index
-* @param id             Player id who can be ressurected
-* @param iActivator     Player id who ressurect
-* @param eMode          MODE_REVIVE - started the resurrection, MODE_PLANT - started planting
-*
-* @noreturn
-*/
+ * Called after the activator starts resurrection/planting (on press USE - `E`)
+ *
+ * @param iEnt           Corpse entity index
+ * @param id             Player id who can be ressurected
+ * @param iActivator     Player id who ressurect
+ * @param eMode          MODE_REVIVE - started the resurrection, MODE_PLANT - started planting
+ *
+ * @noreturn
+ */
 forward rt_revive_start(const iEnt, const id, const iActivator, const Modes:eMode);
 
 /**
-* PreThink on resurrection/planting
-*
-* @note                 Timer can be 0.0
-*
-* @param iEnt           Corpse entity index
-* @param id             Player id who can be ressurected
-* @param iActivator     Player id who ressurect
-* @param timer          Resurrection time
-* @param eMode          MODE_REVIVE - the player continues to be resurrected, MODE_PLANT - the player continues to be planted
-*
-* @return               PLUGIN_CONTINUE to continue resurrection/planting
-*                       PLUGIN_HANDLED to stop resurrection/planting
-*/
+ * PreThink on resurrection/planting
+ *
+ * @note                 Timer can be 0.0
+ *
+ * @param iEnt           Corpse entity index
+ * @param id             Player id who can be ressurected
+ * @param iActivator     Player id who ressurect
+ * @param timer          Resurrection time
+ * @param eMode          MODE_REVIVE - the player continues to be resurrected, MODE_PLANT - the player continues to be planted
+ *
+ * @return               PLUGIN_CONTINUE to continue resurrection/planting
+ *                       PLUGIN_HANDLED to stop resurrection/planting
+ */
 forward rt_revive_loop_pre(const iEnt, const id, const iActivator, const Float:timer, Modes:eMode);
 
 /**
-* PostThink on resurrection/planting
-*
-* @note                 Timer can't be 0.0
-*
-* @param iEnt           Corpse entity index
-* @param id             Player id who can be ressurected
-* @param iActivator     Player id who ressurect
-* @param timer          Resurrection time
-* @param eMode          MODE_REVIVE - the player continues to be resurrected, MODE_PLANT - the player continues to be planted
-*
-* @return               PLUGIN_CONTINUE to continue resurrection/planting
-*                       PLUGIN_HANDLED to stop resurrection/planting
-*/
+ * PostThink on resurrection/planting
+ *
+ * @note                 Timer can't be 0.0
+ *
+ * @param iEnt           Corpse entity index
+ * @param id             Player id who can be ressurected
+ * @param iActivator     Player id who ressurect
+ * @param timer          Resurrection time
+ * @param eMode          MODE_REVIVE - the player continues to be resurrected, MODE_PLANT - the player continues to be planted
+ *
+ * @return               PLUGIN_CONTINUE to continue resurrection/planting
+ *                       PLUGIN_HANDLED to stop resurrection/planting
+ */
 forward rt_revive_loop_post(const iEnt, const id, const iActivator, const Float:timer, Modes:eMode);
 
 /**
-* Called after the resurrection/planting is ending
-*
-* @param iEnt           Corpse entity index
-* @param id             Player id who can be ressurected
-* @param iActivator     Player id who ressurect
-* @param eMode          MODE_REVIVE - the player was resurrected, MODE_PLANT - the player was planted
-*
-* @noreturn
-*/
+ * Called after the resurrection/planting is ending
+ *
+ * @param iEnt           Corpse entity index
+ * @param id             Player id who can be ressurected
+ * @param iActivator     Player id who ressurect
+ * @param eMode          MODE_REVIVE - the player was resurrected, MODE_PLANT - the player was planted
+ *
+ * @noreturn
+ */
 forward rt_revive_end(const iEnt, const id, const iActivator, const Modes:eMode);
 
 /**
-* Called when the player has stopped resurrecting/planting
-*
-* @param iEnt           Corpse entity index
-* @param id             Player id who can be ressurected or RT_NULLENT
-* @param iActivator     Player id who ressurect or RT_NULLENT
-* @param eMode          MODE_REVIVE - stopped the resurrection, MODE_PLANT - stopped planting
-*
-* @noreturn
-*/
+ * Called when the player has stopped resurrecting/planting
+ *
+ * @param iEnt           Corpse entity index
+ * @param id             Player id who can be ressurected or RT_NULLENT
+ * @param iActivator     Player id who ressurect or RT_NULLENT
+ * @param eMode          MODE_REVIVE - stopped the resurrection, MODE_PLANT - stopped planting
+ *
+ * @noreturn
+ */
 forward rt_revive_cancelled(const iEnt, const id, const iActivator, const Modes:eMode);
 
 /**
-* Called before a corpse is created
-*
-* @param iEnt           Corpse entity index
-* @param id             Player id whose corpse
-*
-* @return               PLUGIN_CONTINUE to continue the created of a corpse
-*                       PLUGIN_HANDLED to stop the created of a corpse
-*/
+ * Called before a corpse is created
+ *
+ * @param iEnt           Corpse entity index
+ * @param id             Player id whose corpse
+ *
+ * @return               PLUGIN_CONTINUE to continue the created of a corpse
+ *                       PLUGIN_HANDLED to stop the created of a corpse
+ */
 forward rt_creating_corpse_start(const iEnt, const id);
 
 /**
-* Called after the creation of the corpse is completed
-*
-* @param iEnt           Corpse entity index
-* @param id             Player id whose corpse
-* @param vOrigin        Coordinates of the corpse
-*
-* @noreturn
-*/
+ * Called after the creation of the corpse is completed
+ *
+ * @param iEnt           Corpse entity index
+ * @param id             Player id whose corpse
+ * @param vOrigin        Coordinates of the corpse
+ *
+ * @noreturn
+ */
 forward rt_creating_corpse_end(const iEnt, const id, const vOrigin[3]);
 
 /**
-* Removal of corpses
-*
-* @param id             Player id whose corpse or 0 for all corpses
-* @param szClassName    Entity classname
-*
-* @return               Player id who is resurrecting or 0
-*/
+ * Removal of corpses
+ *
+ * @param id             Player id whose corpse or 0 for all corpses
+ * @param szClassName    Entity classname
+ *
+ * @return               Player id who is resurrecting or 0
+ */
 stock UTIL_RemoveCorpses(const id = 0, const szClassName[] = DEAD_BODY_CLASSNAME) {
 	new iEnt = RT_NULLENT;
 	new iActivator, iOwner;
@@ -144,16 +175,16 @@ stock UTIL_RemoveCorpses(const id = 0, const szClassName[] = DEAD_BODY_CLASSNAME
 }
 
 /**
-* Reset entity think
-*
-* @param eForward       Forward type
-* @param iEnt           Corpse entity index
-* @param id             Player id whose corpse
-* @param iActivator     Player id who ressurect
-* @param eMode          MODE_REVIVE - stopped the resurrection, MODE_PLANT - stopped planting
-*
-* @noreturn
-*/
+ * Reset entity think
+ *
+ * @param eForward       Forward type
+ * @param iEnt           Corpse entity index
+ * @param id             Player id whose corpse
+ * @param iActivator     Player id who ressurect
+ * @param eMode          MODE_REVIVE - stopped the resurrection, MODE_PLANT - stopped planting
+ *
+ * @noreturn
+ */
 stock UTIL_ResetEntityThink(const eForward, const iEnt, const id, const iActivator, const Modes:eMode) {
 	if(!is_nullent(iEnt)) {
 		set_entvar(iEnt, var_nextthink, get_gametime() + 1.0);
@@ -167,14 +198,14 @@ stock UTIL_ResetEntityThink(const eForward, const iEnt, const id, const iActivat
 }
 
 /**
-* Notifying players in chat
-*
-* @param id             Player id or 0 to display to all clients
-* @param iSender        Player id used as the message sender or color type
-* @param szFmtRules     Formatting rules
-*
-* @noreturn
-*/
+ * Notifying players in chat
+ *
+ * @param id             Player id or 0 to display to all clients
+ * @param iSender        Player id used as the message sender or color type
+ * @param szFmtRules     Formatting rules
+ *
+ * @noreturn
+ */
 stock UTIL_NotifyClient(const id, const iSender, const szFmtRules[], any:...) {
 	new szMessage[192];
 	SetGlobalTransTarget(id);

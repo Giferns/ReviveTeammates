@@ -9,8 +9,8 @@ public stock const CFG_FILE[] = "addons/amxmodx/configs/rt_configs/rt_bonus.cfg"
 #define MAX_SPAWN_WEAPONS 6
 
 enum CVARS {
-	WEAPONS[256],
-	WEAPONS_MAPS[256],
+	WEAPONS[MAX_FMT_LENGTH],
+	WEAPONS_MAPS[MAX_FMT_LENGTH],
 	Float:REVIVE_HEALTH,
 	Float:PLANTING_HEALTH,
 	Float:HEALTH,
@@ -39,7 +39,7 @@ public plugin_init() {
 }
 
 public plugin_cfg() {
-	new szMapName[32], szWeapon[32];
+	new szMapName[MAX_MAPNAME_LEN], szWeapon[32];
 	get_mapname(szMapName, charsmax(szMapName));
 	
 	if(g_eCvars[WEAPONS_MAPS][0] != EOS && containi(szMapName, "awp_") != -1) {
