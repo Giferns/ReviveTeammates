@@ -87,8 +87,10 @@ public AddToFullPack_Pre(es, e, ent, host, flags, player, pSet) {
 	if(g_eCvars[CORPSE_SPRITE][0] == EOS || player || !FClassnameIs(ent, CORPSE_SPRITE_CLASSNAME))
 		return FMRES_IGNORED;
 
-	if(TeamName:get_entvar(ent, var_team) != TeamName:get_member(host, m_iTeam))
-		set_es(es, ES_Effects, EF_NODRAW);
+	if(TeamName:get_entvar(ent, var_team) != TeamName:get_member(host, m_iTeam)) {
+		forward_return(FMV_CELL, false);
+		return FMRES_SUPERCEDE;
+	}
 
 	return FMRES_IGNORED;
 }
