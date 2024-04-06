@@ -40,6 +40,7 @@ Download the archive and unpack it
 | rt_revive_antiflood | 3.0 | 1.0 | - | Duration of anti-flood resurrection(in seconds) |
 | rt_corpse_time | 30.0 | 0.0 | - | Duration of a corpse's life (in seconds). If you set it to 0, the corpse lives until the end of the round. |
 | rt_search_radius | 64.0 | 1.0 | - | Search radius for a corpse |
+| rt_force_fwd_mode | 0 | 0 | 1 | Execute forwards more often. Set this to 1 if 'rt_no_move 1' didn't work properly. |
 
 </details>
 
@@ -49,7 +50,11 @@ Download the archive and unpack it
 | Cvar | Def Var | Min Var | Max Var | Description |
 |------|:-------:|:-------:|:-------:|------------:|
 | rt_spectator | 1 | 0 | 1 | Automatically observe the resurrecting player |
-| rt_notify_dhud | 1 | 0 | 1 | Notification under Timer(DHUD) |
+| rt_notify_dhud | 1 | 0 | 1 | Notification above the timer(DHUD) |
+| rt_revive_dhud_colors | 0 255 0 | - | - | DHUD's colors at resurrection |
+| rt_revive_dhud_coords | -1.0 0.8 | - | - | DHUD's coordinates at resurrection |
+| rt_planting_dhud_colors | 255 0 0 | - | - | DHUD's colors at planting |
+| rt_planting_dhud_coords | -1.0 0.8 | - | - | DHUD's coordinates at planting |
 | rt_revive_glow | #5da130 | - | - | The color of the corpse being resurrected(HEX) |
 | rt_planting_glow | #9b2d30 | - | - | The color of the corpse being planted(HEX) |
 | rt_corpse_sprite | sprites/rt/corpse_sprite2.spr | - | - | Resurrection sprite over a corpse. To disable the function, leave the cvar empty |
@@ -105,6 +110,10 @@ Download the archive and unpack it
 | Cvar | Def Var | Min Var | Max Var | Description |
 |------|:-------:|:-------:|:-------:|------------:|
 | rt_timer_type | 1 | 0 | 1 | 0 - HUD, 1 - bartime(orange line) |
+| rt_revive_hud_colors | 0 255 0 | - | - | HUD's colors at resurrection |
+| rt_revive_hud_coords | -1.0 0.6 | - | - | HUD's coordinates at resurrection |
+| rt_planting_hud_colors | 255 0 0 | - | - | HUD's colors at planting |
+| rt_planting_hud_coords | -1.0 0.6 | - | - | HUD's coordinates at planting |
 
 </details>
 
@@ -114,14 +123,19 @@ Download the archive and unpack it
 ```ini
 [revive_start]
 rt/revive_start.wav
+
 [revive_loop]
 rt/revive_loop.wav
+
 [revive_end]
 rt/revive_end.wav
+
 [plant_start]
 rt/plant_start.wav
+
 [plant_loop]
 rt/plant_loop.wav
+
 [plant_end]
 rt/plant_end.wav
 ```
