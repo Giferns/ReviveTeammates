@@ -3,10 +3,12 @@
 #include <reapi>
 #include <rt_api>
 
+public stock const PLUGIN[] = "Revive Teammates: Bonus";
+public stock const CFG_FILE[] = "addons/amxmodx/configs/rt_configs/rt_bonus.cfg";
+
 #define MAX_SPAWN_WEAPONS 6
 
-enum CVARS
-{
+enum CVARS {
 	WEAPONS[256],
 	WEAPONS_MAPS[256],
 	Float:REVIVE_HEALTH,
@@ -23,28 +25,25 @@ new g_eCvars[CVARS];
 new g_iWeapons;
 new g_szWeapon[MAX_SPAWN_WEAPONS][32];
 
-public plugin_precache()
-{
-	RegisterCvars();
-	UploadConfigs();
+public plugin_precache() {
+	CreateCvars();
+
+	server_cmd("exec %s", CFG_FILE);
+	server_exec();
 }
 
-public plugin_init()
-{
-	register_plugin("Revive Teammates: Bonus", VERSION, AUTHORS);
+public plugin_init() {
+	register_plugin(PLUGIN, VERSION, AUTHORS);
 	
 	register_dictionary("rt_library.txt");
 }
 
-public plugin_cfg()
-{
+public plugin_cfg() {
 	new szMapName[32], szWeapon[32];
 	get_mapname(szMapName, charsmax(szMapName));
 	
-	if(g_eCvars[WEAPONS_MAPS][0] != EOS && containi(szMapName, "awp_") != -1)
-	{
-		while(argbreak(g_eCvars[WEAPONS_MAPS], szWeapon, charsmax(szWeapon), g_eCvars[WEAPONS_MAPS], charsmax(g_eCvars[WEAPONS_MAPS])) != -1)
-		{
+	if(g_eCvars[WEAPONS_MAPS][0] != EOS && containi(szMapName, "awp_") != -1) {
+		while(argbreak(g_eCvars[WEAPONS_MAPS], szWeapon, charsmax(szWeapon), g_eCvars[WEAPONS_MAPS], charsmax(g_eCvars[WEAPONS_MAPS])) != -1) {
 			if(g_iWeapons == MAX_SPAWN_WEAPONS)
 				break;
 
@@ -54,10 +53,8 @@ public plugin_cfg()
 		return;
 	}
 
-	if(g_eCvars[WEAPONS][0] != EOS)
-	{
-		while(argbreak(g_eCvars[WEAPONS], szWeapon, charsmax(szWeapon), g_eCvars[WEAPONS], charsmax(g_eCvars[WEAPONS])) != -1)
-		{
+	if(g_eCvars[WEAPONS][0] != EOS) {
+		while(argbreak(g_eCvars[WEAPONS], szWeapon, charsmax(szWeapon), g_eCvars[WEAPONS], charsmax(g_eCvars[WEAPONS])) != -1) {
 			if(g_iWeapons == MAX_SPAWN_WEAPONS)
 				break;
 
@@ -66,17 +63,12 @@ public plugin_cfg()
 	}
 }
 
-public rt_revive_end(const iEnt, const id, const iActivator, const modes_struct:eMode)
-{
-	switch(eMode)
-	{
-		case MODE_REVIVE:
-		{
-			static modes_struct:iMode;
-			iMode = get_entvar(iEnt, var_iuser3);
+public rt_revive_end(const iEnt, const id, const iActivator, const Modes:eMode) {
+	switch(eMode) {
+		case MODE_REVIVE: {
+			new Modes:iMode = Modes:get_entvar(iEnt, var_iuser3);
 
-			if(iMode != MODE_PLANT)
-			{
+			if(iMode != MODE_PLANT) {
 				if(g_eCvars[REVIVE_HEALTH])
 					rg_add_health_to_player(iActivator, g_eCvars[REVIVE_HEALTH]);
 
@@ -86,18 +78,14 @@ public rt_revive_end(const iEnt, const id, const iActivator, const modes_struct:
 				if(g_eCvars[ARMOR])
 					rg_set_user_armor(id, g_eCvars[ARMOR], ArmorType:g_eCvars[ARMOR_TYPE]);
 
-				if(g_iWeapons > 0)
-				{
+				if(g_iWeapons > 0) {
 					rg_remove_all_items(id);
 
-					for(new i; i <= g_iWeapons; i++)
-					{
+					for(new i; i <= g_iWeapons; i++) {
 						new iWeapon = rg_give_item(id, g_szWeapon[i]);
 
-						if(!is_nullent(iWeapon))
-						{
-							static WeaponIdType:iWeaponType;
-							iWeaponType = get_member(iWeapon, m_iId);
+						if(!is_nullent(iWeapon)) {
+							new WeaponIdType:iWeaponType = WeaponIdType:get_member(iWeapon, m_iId);
 
 							if(iWeaponType != WEAPON_KNIFE && iWeaponType != WEAPON_SHIELDGUN)
 								rg_set_user_bpammo(id, iWeaponType, rg_get_iteminfo(iWeapon, ItemInfo_iMaxAmmo1));
@@ -112,21 +100,18 @@ public rt_revive_end(const iEnt, const id, const iActivator, const modes_struct:
 					set_member(id, m_iDeaths, max(get_member(id, m_iDeaths) - 1, 0));
 			}
 		}
-		case MODE_PLANT:
-		{
+		case MODE_PLANT: {
 			if(g_eCvars[PLANTING_HEALTH])
 				rg_add_health_to_player(iActivator, g_eCvars[PLANTING_HEALTH]);
 		}
 	}
 }
 
-stock rg_add_health_to_player(const id, const Float:flHealth)
-{
+stock rg_add_health_to_player(const id, const Float:flHealth) {
 	set_entvar(id, var_health, floatclamp(Float:get_entvar(id, var_health) + flHealth, 1.0, Float:get_entvar(id, var_max_health)));
 }
 
-public RegisterCvars()
-{
+public CreateCvars() {
 	bind_pcvar_string(create_cvar(
 		"rt_weapons",
 		"weapon_knife weapon_deagle",

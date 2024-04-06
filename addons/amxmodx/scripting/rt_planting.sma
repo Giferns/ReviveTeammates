@@ -3,8 +3,10 @@
 #include <reapi>
 #include <rt_api>
 
-enum CVARS
-{
+public stock const PLUGIN[] = "Revive Teammates: Planting";
+public stock const CFG_FILE[] = "addons/amxmodx/configs/rt_configs/rt_planting.cfg";
+
+enum CVARS {
 	Float:DAMAGE,
 	Float:RADIUS,
 	MAX_PLANTING
@@ -12,60 +14,52 @@ enum CVARS
 
 new g_eCvars[CVARS];
 
-new g_szModels[3];
-
-enum _:PlayerData
-{
+enum _:PlayerData {
 	PLANTING_COUNT
 };
 
 new g_ePlayerData[MAX_PLAYERS + 1][PlayerData];
 
-public plugin_precache()
-{
+new g_szModels[3];
+
+public plugin_precache() {
 	g_szModels[0] = precache_model("sprites/zerogxplode.spr");
 	g_szModels[1] = precache_model("sprites/eexplo.spr");
 	g_szModels[2] = precache_model("sprites/fexplo.spr");
 
-	RegisterCvars();
-	UploadConfigs();
+	CreateCvars();
+
+	server_cmd("exec %s", CFG_FILE);
+	server_exec();
 }
 
-public plugin_init()
-{
-	register_plugin("Revive Teammates: Planting", VERSION, AUTHORS);
+public plugin_init() {
+	register_plugin(PLUGIN, VERSION, AUTHORS);
 
 	register_dictionary("rt_library.txt");
 
-	RegisterHookChain(RG_CSGameRules_CleanUpMap, "CSGameRules_CleanUpMap_Post", .post = 1);
+	RegisterHookChain(RG_CSGameRules_CleanUpMap, "CSGameRules_CleanUpMap_Post", true);
 }
 
-public CSGameRules_CleanUpMap_Post()
-{
+public CSGameRules_CleanUpMap_Post() {
 	arrayset(g_ePlayerData[0][_:0], 0, sizeof(g_ePlayerData) * sizeof(g_ePlayerData[]));
 }
 
-public client_disconnected(id)
-{
+public client_disconnected(id) {
 	g_ePlayerData[id][PLANTING_COUNT] = 0;
 }
 
-public rt_revive_start(const iEnt, const id, const iActivator, const modes_struct:eMode)
-{
-	static modes_struct:iMode;
-	iMode = get_entvar(iEnt, var_iuser3);
+public rt_revive_start(const iEnt, const id, const iActivator, const Modes:eMode) {
+	new Modes:iMode = Modes:get_entvar(iEnt, var_iuser3);
 	
-	if(eMode == MODE_PLANT)
-	{
-		if(g_ePlayerData[iActivator][PLANTING_COUNT] >= g_eCvars[MAX_PLANTING])
-		{
-			UTIL_NotifyClient(iActivator, print_team_red, "RT_PLANTING_COUNT");
+	if(eMode == MODE_PLANT) {
+		if(g_ePlayerData[iActivator][PLANTING_COUNT] >= g_eCvars[MAX_PLANTING]) {
+			UTIL_NotifyClient(iActivator, print_team_red, "%l%l", "RT_CHAT_TAG", "RT_PLANTING_COUNT");
 			return PLUGIN_HANDLED;
 		}
 
-		if(iMode == MODE_PLANT)
-		{
-			UTIL_NotifyClient(iActivator, print_team_red, "RT_IS_PLANTED", id);
+		if(iMode == MODE_PLANT) {
+			UTIL_NotifyClient(iActivator, print_team_red, "%l%l", "RT_CHAT_TAG", "RT_IS_PLANTED");
 			return PLUGIN_HANDLED;
 		}
 	}
@@ -73,26 +67,19 @@ public rt_revive_start(const iEnt, const id, const iActivator, const modes_struc
 	return PLUGIN_CONTINUE;
 }
 
-public rt_revive_end(const iEnt, const id, const iActivator, const modes_struct:eMode)
-{
-	switch(eMode)
-	{
-		case MODE_REVIVE:
-		{
-			static modes_struct:iMode;
-			iMode = get_entvar(iEnt, var_iuser3);
+public rt_revive_end(const iEnt, const id, const iActivator, const Modes:eMode) {
+	switch(eMode) {
+		case MODE_REVIVE: {
+			new Modes:iMode = Modes:get_entvar(iEnt, var_iuser3);
 
-			if(iMode == MODE_PLANT)
-			{
-				static Float:vOrigin[3];
+			if(iMode == MODE_PLANT) {
+				new Float:vOrigin[3];
 				get_entvar(iActivator, var_origin, vOrigin);
 				UTIL_MakeExplosionEffects(vOrigin);
 				
-				static iPlanter;
-				iPlanter = get_entvar(iEnt, var_iuser4);
+				new iPlanter = get_entvar(iEnt, var_iuser4);
 				
-				for(new iVictim = 1, Float:fReduceDamage, Float:vecEnd[3]; iVictim <= MaxClients; iVictim++)
-				{
+				for(new iVictim = 1, Float:fReduceDamage, Float:vecEnd[3]; iVictim <= MaxClients; iVictim++) {
 					if(!is_user_alive(iVictim) || TeamName:get_member(iVictim, m_iTeam) != TeamName:get_member(id, m_iTeam))
 						continue;
 					
@@ -109,9 +96,8 @@ public rt_revive_end(const iEnt, const id, const iActivator, const modes_struct:
 				UTIL_RemoveCorpses(id, DEAD_BODY_CLASSNAME);
 			}
 		}
-		case MODE_PLANT:
-		{
-			UTIL_NotifyClient(iActivator, print_team_blue, "RT_PLANTING", id);
+		case MODE_PLANT: {
+			UTIL_NotifyClient(iActivator, print_team_blue, "%l%l", "RT_CHAT_TAG", "RT_PLANTING", id);
 			
 			g_ePlayerData[iActivator][PLANTING_COUNT]++;
 
@@ -122,8 +108,7 @@ public rt_revive_end(const iEnt, const id, const iActivator, const modes_struct:
 	}
 }
 
-stock UTIL_MakeExplosionEffects(const Float:vecOrigin[3])
-{
+stock UTIL_MakeExplosionEffects(const Float:vecOrigin[3]) {
 	message_begin_f(MSG_PAS, SVC_TEMPENTITY, vecOrigin);
 	write_byte(TE_EXPLOSION);
 	write_coord_f(vecOrigin[0]);
@@ -146,8 +131,7 @@ stock UTIL_MakeExplosionEffects(const Float:vecOrigin[3])
 	write_byte(TE_EXPLFLAG_NONE);
 	message_end();
 
-	for(new i; i < 3; i++)
-	{
+	for(new i; i < 3; i++) {
 		message_begin_f(MSG_PAS, SVC_TEMPENTITY, vecOrigin);
 		write_byte(TE_SPRITE);
 		write_coord_f(vecOrigin[0] + random_float(-256.0, 256.0));
@@ -160,8 +144,7 @@ stock UTIL_MakeExplosionEffects(const Float:vecOrigin[3])
 	}
 }
 
-public RegisterCvars()
-{
+public CreateCvars() {
 	bind_pcvar_float(create_cvar(
 		"rt_explosion_damage",
 		"255.0",

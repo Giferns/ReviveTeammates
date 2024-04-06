@@ -1,17 +1,20 @@
-//////////////////////////
-// Revive Teammates API //
-//////////////////////////
+////////////////////////////////////
+////////					////////
+////	Revive Teammates API	////
+////////					////////
+////////////////////////////////////
 
 #if defined _rt_api_included
-  #endinput
+	#endinput
 #endif
 #define _rt_api_included
 
-#define VERSION "1.1.7"
-#define AUTHORS "ufame & Albertio"
+public stock const VERSION[] = "1.2.0";
+public stock const AUTHORS[] = "DEV-CS.RU Community";
 
-enum modes_struct
-{
+#define RT_NULLENT -1
+
+enum Modes {
 	MODE_NONE = 0,
 	MODE_REVIVE,
 	MODE_PLANT
@@ -22,161 +25,159 @@ new const DEAD_BODY_CLASSNAME[] = "rt_corpse_empty";
 /**
 * Called after the activator starts resurrection/planting (on press USE - `E`)
 *
-* @param iEnt       corpse entity index
-* @param id         player id who can be revived
-* @param iActivator player id who can revive
-* @param eMode      MODE_REVIVE - started the resurrection, MODE_PLANT - started planting
+* @param iEnt           Corpse entity index
+* @param id             Player id who can be ressurected
+* @param iActivator     Player id who ressurect
+* @param eMode          MODE_REVIVE - started the resurrection, MODE_PLANT - started planting
 *
+* @noreturn
 */
-forward rt_revive_start(const iEnt, const id, const iActivator, const modes_struct:eMode);
+forward rt_revive_start(const iEnt, const id, const iActivator, const Modes:eMode);
 
 /**
 * PreThink on resurrection/planting
 *
-* @param iEnt       corpse entity index
-* @param id         player id who can be revived
-* @param iActivator player id who can revive
-* @param timer      time to revive id
-* @param eMode      MODE_REVIVE - the player continues to be resurrected, MODE_PLANT - the player continues to be planted
+* @note                 Timer can be 0.0
 *
-* @note Can stoped by return PLUGIN_HANDLED
+* @param iEnt           Corpse entity index
+* @param id             Player id who can be ressurected
+* @param iActivator     Player id who ressurect
+* @param timer          Resurrection time
+* @param eMode          MODE_REVIVE - the player continues to be resurrected, MODE_PLANT - the player continues to be planted
 *
-* @note timer can be 0.0
-*
+* @return               PLUGIN_CONTINUE to continue resurrection/planting
+*                       PLUGIN_HANDLED to stop resurrection/planting
 */
-forward rt_revive_loop_pre(const iEnt, const id, const iActivator, const Float:timer, modes_struct:eMode);
+forward rt_revive_loop_pre(const iEnt, const id, const iActivator, const Float:timer, Modes:eMode);
 
 /**
 * PostThink on resurrection/planting
 *
-* @param iEnt       corpse entity index
-* @param id         player id who can be revived
-* @param iActivator player id who can revive
-* @param timer      time to revive id
-* @param eMode      MODE_REVIVE - the player continues to be resurrected, MODE_PLANT - the player continues to be planted
+* @note                 Timer can't be 0.0
 *
-* @note timer can't(!!!) be 0.0
+* @param iEnt           Corpse entity index
+* @param id             Player id who can be ressurected
+* @param iActivator     Player id who ressurect
+* @param timer          Resurrection time
+* @param eMode          MODE_REVIVE - the player continues to be resurrected, MODE_PLANT - the player continues to be planted
 *
+* @return               PLUGIN_CONTINUE to continue resurrection/planting
+*                       PLUGIN_HANDLED to stop resurrection/planting
 */
-forward rt_revive_loop_post(const iEnt, const id, const iActivator, const Float:timer, modes_struct:eMode);
+forward rt_revive_loop_post(const iEnt, const id, const iActivator, const Float:timer, Modes:eMode);
 
 /**
 * Called after the resurrection/planting is ending
 *
-* @param iEnt       corpse entity index
-* @param id         player id who can be revived
-* @param iActivator player id who can revive
-* @param eMode      MODE_REVIVE - the player was resurrected, MODE_PLANT - the player was planted
+* @param iEnt           Corpse entity index
+* @param id             Player id who can be ressurected
+* @param iActivator     Player id who ressurect
+* @param eMode          MODE_REVIVE - the player was resurrected, MODE_PLANT - the player was planted
 *
+* @noreturn
 */
-forward rt_revive_end(const iEnt, const id, const iActivator, const modes_struct:eMode);
+forward rt_revive_end(const iEnt, const id, const iActivator, const Modes:eMode);
 
 /**
 * Called when the player has stopped resurrecting/planting
 *
-* @param iEnt       corpse entity index
-* @param id         player id who can be revived
-* @param iActivator player id who can revive
-* @param eMode      MODE_REVIVE - stopped the resurrection, MODE_PLANT - stopped planting
+* @param iEnt           Corpse entity index
+* @param id             Player id who can be ressurected or RT_NULLENT
+* @param iActivator     Player id who ressurect or RT_NULLENT
+* @param eMode          MODE_REVIVE - stopped the resurrection, MODE_PLANT - stopped planting
 *
+* @noreturn
 */
-forward rt_revive_cancelled(const iEnt, const id, const iActivator, const modes_struct:eMode);
+forward rt_revive_cancelled(const iEnt, const id, const iActivator, const Modes:eMode);
 
 /**
 * Called before a corpse is created
 *
-* @param iEnt  corpse entity index
-* @param id    id of the player whose corpse
+* @param iEnt           Corpse entity index
+* @param id             Player id whose corpse
 *
+* @return               PLUGIN_CONTINUE to continue the created of a corpse
+*                       PLUGIN_HANDLED to stop the created of a corpse
 */
 forward rt_creating_corpse_start(const iEnt, const id);
 
 /**
 * Called after the creation of the corpse is completed
 *
-* @param iEnt    corpse entity index
-* @param id      id of the player whose corpse
-* @param vOrigin  coordinates of the corpse
+* @param iEnt           Corpse entity index
+* @param id             Player id whose corpse
+* @param vOrigin        Coordinates of the corpse
 *
+* @noreturn
 */
 forward rt_creating_corpse_end(const iEnt, const id, const vOrigin[3]);
 
-/*
+/**
 * Removal of corpses
+*
+* @param id             Player id whose corpse or 0 for all corpses
+* @param szClassName    Entity classname
+*
+* @return               Player id who is resurrecting or 0
 */
-stock UTIL_RemoveCorpses(const id = 0, const szClassName[] = DEAD_BODY_CLASSNAME)
-{
-	static iEnt, iActivator;
-	iEnt = NULLENT;
-	iActivator = 0;
+stock UTIL_RemoveCorpses(const id = 0, const szClassName[] = DEAD_BODY_CLASSNAME) {
+	new iEnt = RT_NULLENT;
+	new iActivator, iOwner;
 
-	while((iEnt = rg_find_ent_by_class(iEnt, szClassName)) > 0)
-	{
-		if(!is_nullent(iEnt))
-		{
-			if(id && get_entvar(iEnt, var_owner) != id)
+	while((iEnt = rg_find_ent_by_class(iEnt, szClassName)) > 0) {
+		if(!is_nullent(iEnt)) {
+			if(id && (iOwner = get_entvar(iEnt, var_owner)) != id)
 				continue;
 
-			if(id && get_entvar(iEnt, var_owner) == id)
+			if(id && iOwner == id)
 				iActivator = get_entvar(iEnt, var_iuser1);
 
 			set_entvar(iEnt, var_flags, FL_KILLME);
 			set_entvar(iEnt, var_nextthink, 0.0);
 
 			if(iActivator)
-				return iActivator;
+				break;
 		}
 	}
 
-	return 0;
+	return iActivator;
 }
 
-/*
+/**
 * Reset entity think
+*
+* @param eForward       Forward type
+* @param iEnt           Corpse entity index
+* @param id             Player id whose corpse
+* @param iActivator     Player id who ressurect
+* @param eMode          MODE_REVIVE - stopped the resurrection, MODE_PLANT - stopped planting
+*
+* @noreturn
 */
-stock UTIL_ResetEntityThink(const eForward, const iEnt, const id, const iActivator, const modes_struct:eMode)
-{
-	if(iEnt != NULLENT)
-	{
+stock UTIL_ResetEntityThink(const eForward, const iEnt, const id, const iActivator, const Modes:eMode) {
+	if(!is_nullent(iEnt)) {
 		set_entvar(iEnt, var_nextthink, get_gametime() + 1.0);
 		set_entvar(iEnt, var_iuser1, 0);
 	}
 
-	ExecuteForward(eForward, _, iEnt, UTIL_IsUserConnected(id), UTIL_IsUserConnected(iActivator), eMode);
+	new iPlayerEnt = is_user_connected(id) ? id : RT_NULLENT;
+	new iActivatorEnt = is_user_connected(iActivator) ? iActivator : RT_NULLENT;
+
+	ExecuteForward(eForward, _, iEnt, iPlayerEnt, iActivatorEnt, eMode);
 }
 
-/*
-* Checking whether the player is connected
-*/
-stock UTIL_IsUserConnected(const id)
-{
-	return (is_user_connected(id) ? id : NULLENT);
-}
-
-/*
+/**
 * Notifying players in chat
+*
+* @param id             Player id or 0 to display to all clients
+* @param iSender        Player id used as the message sender or color type
+* @param szFmtRules     Formatting rules
+*
+* @noreturn
 */
-stock UTIL_NotifyClient(const id, const eColorNum, const szLangMessage[], const iMessageArg = 0)
-{
-	if(iMessageArg)
-		client_print_color(id, eColorNum, "%L%L", id, "RT_CHAT_TAG", id, szLangMessage, iMessageArg);
-	else
-		client_print_color(id, eColorNum, "%L%L", id, "RT_CHAT_TAG", id, szLangMessage);
-}
-
-/*
-* Loads plugin configs
-*/
-stock UploadConfigs()
-{
-	new szPath[MAX_RESOURCE_PATH_LENGTH], szPlFileName[32];
-
-	get_localinfo("amxx_configsdir", szPath, charsmax(szPath));
-	get_plugin(-1, szPlFileName, charsmax(szPlFileName));
-
-	copyc(szPlFileName, charsmax(szPlFileName), szPlFileName, '.');
-	formatex(szPath, charsmax(szPath), "%s/rt_configs/%s.cfg", szPath, szPlFileName);
-
-	server_cmd("exec %s", szPath);
-	server_exec();
+stock UTIL_NotifyClient(const id, const iSender, const szFmtRules[], any:...) {
+	new szMessage[192];
+	SetGlobalTransTarget(id);
+	vformat(szMessage, charsmax(szMessage), szFmtRules, 4);
+	client_print_color(id, iSender, szMessage);
 }

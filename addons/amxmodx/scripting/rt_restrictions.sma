@@ -2,10 +2,12 @@
 #include <reapi>
 #include <rt_api>
 
+public stock const PLUGIN[] = "Revive Teammates: Restrictions";
+public stock const CFG_FILE[] = "addons/amxmodx/configs/rt_configs/rt_restrictions.cfg";
+
 #define m_iCurrentRound (get_member_game(m_iTotalRoundsPlayed) + 1)
 
-enum CVARS
-{
+enum CVARS {
 	ACCESS[32],
 	MAX_REVIVES,
 	MAX_SPAWNS,
@@ -24,8 +26,7 @@ enum CVARS
 
 new g_eCvars[CVARS];
 
-enum _:PlayerData
-{
+enum _:PlayerData {
 	REVIVE_COUNT
 };
 
@@ -35,126 +36,106 @@ new g_iAccessFlags, g_iPreventFlags;
 
 new HookChain:g_pHook_ResetMaxSpeed;
 
-public plugin_precache()
-{
-	RegisterCvars();
-	UploadConfigs();
+public plugin_precache() {
+	CreateCvars();
+
+	server_cmd("exec %s", CFG_FILE);
+	server_exec();
 }
 
-public plugin_init()
-{
-	register_plugin("Revive Teammates: Restrictions", VERSION, AUTHORS);
+public plugin_init() {
+	register_plugin(PLUGIN, VERSION, AUTHORS);
 
 	register_dictionary("rt_library.txt");
 
-	RegisterHookChain(RG_CSGameRules_CleanUpMap, "CSGameRules_CleanUpMap_Post", .post = 1);
-	DisableHookChain(g_pHook_ResetMaxSpeed = RegisterHookChain(RG_CBasePlayer_ResetMaxSpeed, "CBasePlayer_ResetMaxSpeed_Post", .post = 1));
+	RegisterHookChain(RG_CSGameRules_CleanUpMap, "CSGameRules_CleanUpMap_Post", true);
+	DisableHookChain(g_pHook_ResetMaxSpeed = RegisterHookChain(RG_CBasePlayer_ResetMaxSpeed, "CBasePlayer_ResetMaxSpeed_Post", true));
 
 	g_iPreventFlags = (PLAYER_PREVENT_CLIMB|PLAYER_PREVENT_JUMP);
 }
 
-public plugin_cfg()
-{
+public plugin_cfg() {
 	g_iAccessFlags = read_flags(g_eCvars[ACCESS]);
 
 	if(g_eCvars[NO_MOVE] == 1)
 		EnableHookChain(g_pHook_ResetMaxSpeed);
 }
 
-public CSGameRules_CleanUpMap_Post()
-{
+public CSGameRules_CleanUpMap_Post() {
 	arrayset(g_ePlayerData[0][_:0], 0, sizeof(g_ePlayerData) * sizeof(g_ePlayerData[]));
 }
 
-public client_disconnected(id)
-{
+public client_disconnected(id) {
 	g_ePlayerData[id][REVIVE_COUNT] = 0;
 }
 
-public CBasePlayer_ResetMaxSpeed_Post(const iActivator)
-{
+public CBasePlayer_ResetMaxSpeed_Post(const iActivator) {
 	if(get_entvar(iActivator, var_iuser3) & g_iPreventFlags)
 		set_entvar(iActivator, var_maxspeed, 1.0);
 }
 
-public rt_revive_start(const iEnt, const id, const iActivator, const modes_struct:eMode)
-{
-	if((get_user_flags(iActivator) & g_iAccessFlags) != g_iAccessFlags)
-	{
-		UTIL_NotifyClient(iActivator, print_team_red, "RT_NO_ACCESS");
+public rt_revive_start(const iEnt, const id, const iActivator, const Modes:eMode) {
+	if(~get_user_flags(iActivator) & g_iAccessFlags) {
+		UTIL_NotifyClient(iActivator, print_team_red, "%l%l", "RT_CHAT_TAG", "RT_NO_ACCESS");
 		return PLUGIN_HANDLED;
 	}
 
-	if(m_iCurrentRound < g_eCvars[MIN_ROUND])
-	{
-		UTIL_NotifyClient(iActivator, print_team_red, "RT_MIN_ROUND", g_eCvars[MIN_ROUND]);
+	if(m_iCurrentRound < g_eCvars[MIN_ROUND]) {
+		UTIL_NotifyClient(iActivator, print_team_red, "%l%l", "RT_CHAT_TAG", "RT_MIN_ROUND", g_eCvars[MIN_ROUND]);
 		return PLUGIN_HANDLED;
 	}
 
-	if(g_eCvars[BOMB] && rg_is_bomb_planted())
-	{
-		UTIL_NotifyClient(iActivator, print_team_red, "RT_BOMB");
+	if(g_eCvars[BOMB] && rg_is_bomb_planted()) {
+		UTIL_NotifyClient(iActivator, print_team_red, "%l%l", "RT_CHAT_TAG", "RT_BOMB");
 		return PLUGIN_HANDLED;
 	}
 
-	if(g_eCvars[SURVIVOR] && rg_users_count(1))
-	{
-		UTIL_NotifyClient(iActivator, print_team_red, "RT_SURVIVOR");
+	if(g_eCvars[SURVIVOR] && rg_users_count(1)) {
+		UTIL_NotifyClient(iActivator, print_team_red, "%l%l", "RT_CHAT_TAG", "RT_SURVIVOR");
 		return PLUGIN_HANDLED;
 	}
 
-	if(g_eCvars[DUEL] && rg_users_count(0))
-	{
-		UTIL_NotifyClient(iActivator, print_team_red, "RT_DUEL");
+	if(g_eCvars[DUEL] && rg_users_count(0)) {
+		UTIL_NotifyClient(iActivator, print_team_red, "%l%l", "RT_CHAT_TAG", "RT_DUEL");
 		return PLUGIN_HANDLED;
 	}
 
-	if(g_eCvars[WIN_DIFF] && (rg_get_team_wins_row(g_eCvars[WIN_DIFF]) == TeamName:get_member(iActivator, m_iTeam)))
-	{
-		UTIL_NotifyClient(iActivator, print_team_red, "RT_WINS_DOMINATION");
+	if(g_eCvars[WIN_DIFF] && (rg_get_team_wins_row(g_eCvars[WIN_DIFF]) == TeamName:get_member(iActivator, m_iTeam))) {
+		UTIL_NotifyClient(iActivator, print_team_red, "%l%l", "RT_CHAT_TAG", "RT_WINS_DOMINATION");
 		return PLUGIN_HANDLED;
 	}
 
-	if(g_eCvars[REMAINING_TIME] && rg_get_remaining_time() <= g_eCvars[REMAINING_TIME])
-	{
-		UTIL_NotifyClient(iActivator, print_team_red, "RT_REMAINING_TIME");
+	if(g_eCvars[REMAINING_TIME] && rg_get_remaining_time() <= g_eCvars[REMAINING_TIME]) {
+		UTIL_NotifyClient(iActivator, print_team_red, "%l%l", "RT_CHAT_TAG", "RT_REMAINING_TIME");
 		return PLUGIN_HANDLED;
 	}
 
-	switch(eMode)
-	{
-		case MODE_REVIVE:
-		{
-			if(g_ePlayerData[iActivator][REVIVE_COUNT] >= g_eCvars[MAX_REVIVES])
-			{
-				UTIL_NotifyClient(iActivator, print_team_red, "RT_REVIVE_COUNT");
+	switch(eMode) {
+		case MODE_REVIVE: {
+			if(g_ePlayerData[iActivator][REVIVE_COUNT] >= g_eCvars[MAX_REVIVES]) {
+				UTIL_NotifyClient(iActivator, print_team_red, "%l%l", "RT_CHAT_TAG", "RT_REVIVE_COUNT");
 				return PLUGIN_HANDLED;
 			}
 
-			if(get_member(id, m_iNumSpawns) > g_eCvars[MAX_SPAWNS])
-			{
-				UTIL_NotifyClient(iActivator, print_team_red, "RT_MAX_SPAWNS");
+			if(get_member(id, m_iNumSpawns) > g_eCvars[MAX_SPAWNS]) {
+				UTIL_NotifyClient(iActivator, print_team_red, "%l%l", "RT_CHAT_TAG", "RT_MAX_SPAWNS");
 				return PLUGIN_HANDLED;
 			}
 
-			if(get_member(iActivator, m_iAccount) < g_eCvars[REVIVE_COST])
-			{
-				UTIL_NotifyClient(iActivator, print_team_red, "RT_NO_MONEY");
+			if(get_member(iActivator, m_iAccount) < g_eCvars[REVIVE_COST]) {
+				UTIL_NotifyClient(iActivator, print_team_red, "%l%l", "RT_CHAT_TAG", "RT_NO_MONEY");
 				return PLUGIN_HANDLED;
 			}
 		}
-		case MODE_PLANT:
-		{
-			if(get_member(iActivator, m_iAccount) < g_eCvars[PLANTING_COST])
-			{
-				UTIL_NotifyClient(iActivator, print_team_red, "RT_NO_MONEY");
+		case MODE_PLANT: {
+			if(get_member(iActivator, m_iAccount) < g_eCvars[PLANTING_COST]) {
+				UTIL_NotifyClient(iActivator, print_team_red, "%l%l", "RT_CHAT_TAG", "RT_NO_MONEY");
 				return PLUGIN_HANDLED;
 			}
 		}
 	}
 
-	if(g_eCvars[NO_MOVE] == 1)
-	{
+	if(g_eCvars[NO_MOVE] == 1) {
 		set_entvar(iActivator, var_iuser3, get_entvar(iActivator, var_iuser3) | g_iPreventFlags);
 		set_entvar(iActivator, var_velocity, NULL_VECTOR);
 		rg_reset_maxspeed(iActivator);
@@ -166,41 +147,34 @@ public rt_revive_start(const iEnt, const id, const iActivator, const modes_struc
 	return PLUGIN_CONTINUE;
 }
 
-public rt_revive_loop_pre(const iEnt, const id, const iActivator, const Float:timer, modes_struct:eMode)
-{
-	if(g_eCvars[BOMB] && rg_is_bomb_planted())
-	{
-		UTIL_NotifyClient(iActivator, print_team_red, "RT_BOMB");
+public rt_revive_loop_pre(const iEnt, const id, const iActivator, const Float:timer, Modes:eMode) {
+	if(g_eCvars[BOMB] && rg_is_bomb_planted()) {
+		UTIL_NotifyClient(iActivator, print_team_red, "%l%l", "RT_CHAT_TAG", "RT_BOMB");
 		return PLUGIN_HANDLED;
 	}
 
-	if(g_eCvars[DUEL] && rg_users_count(0))
-	{
-		UTIL_NotifyClient(iActivator, print_team_red, "RT_DUEL");
+	if(g_eCvars[DUEL] && rg_users_count(0)) {
+		UTIL_NotifyClient(iActivator, print_team_red, "%l%l", "RT_CHAT_TAG", "RT_DUEL");
 		return PLUGIN_HANDLED;
 	}
 
-	if(g_eCvars[SURVIVOR] && rg_users_count(1))
-	{
-		UTIL_NotifyClient(iActivator, print_team_red, "RT_SURVIVOR");
+	if(g_eCvars[SURVIVOR] && rg_users_count(1)) {
+		UTIL_NotifyClient(iActivator, print_team_red, "%l%l", "RT_CHAT_TAG", "RT_SURVIVOR");
 		return PLUGIN_HANDLED;
 	}
 
-	if(g_eCvars[REMAINING_TIME] && rg_get_remaining_time() <= g_eCvars[REMAINING_TIME])
-	{
-		UTIL_NotifyClient(iActivator, print_team_red, "RT_REMAINING_TIME");
+	if(g_eCvars[REMAINING_TIME] && rg_get_remaining_time() <= g_eCvars[REMAINING_TIME]) {
+		UTIL_NotifyClient(iActivator, print_team_red, "%l%l", "RT_CHAT_TAG", "RT_REMAINING_TIME");
 		return PLUGIN_HANDLED;
 	}
 
-	if(g_eCvars[NO_MOVE] == 2)
-	{
-		static Float:vPlOrigin[3], Float:vEntOrigin[3];
+	if(g_eCvars[NO_MOVE] == 2) {
+		new Float:vPlOrigin[3], Float:vEntOrigin[3];
 		get_entvar(iActivator, var_origin, vPlOrigin);
 		get_entvar(iEnt, var_vuser4, vEntOrigin);
 
-		if(vector_distance(vPlOrigin, vEntOrigin) > get_entvar(iEnt, var_fuser2))
-		{
-			UTIL_NotifyClient(iActivator, print_team_red, "RT_MAX_DISTANCE");
+		if(vector_distance(vPlOrigin, vEntOrigin) > Float:get_entvar(iEnt, var_fuser2)) {
+			UTIL_NotifyClient(iActivator, print_team_red, "%l%l", "RT_CHAT_TAG", "RT_MAX_DISTANCE");
 			return PLUGIN_HANDLED;
 		}
 	}
@@ -208,21 +182,16 @@ public rt_revive_loop_pre(const iEnt, const id, const iActivator, const Float:ti
 	return PLUGIN_CONTINUE;
 }
 
-public rt_revive_loop_post(const iEnt, const id, const iActivator, const Float:timer, modes_struct:eMode)
-{
+public rt_revive_loop_post(const iEnt, const id, const iActivator, const Float:timer, Modes:eMode) {
 	if(g_eCvars[FORCE_FWD_MODE] && g_eCvars[NO_MOVE] == 1)
-	{
 		set_entvar(iActivator, var_maxspeed, 1.0);
-	}
 }
 
-public rt_revive_cancelled(const iEnt, const id, const iActivator, const modes_struct:eMode)
-{
-	if(iActivator == NULLENT)
+public rt_revive_cancelled(const iEnt, const id, const iActivator, const Modes:eMode) {
+	if(iActivator == RT_NULLENT)
 		return;
 
-	if(g_eCvars[NO_MOVE] == 1)
-	{
+	if(g_eCvars[NO_MOVE] == 1) {
 		set_entvar(iActivator, var_iuser3, get_entvar(iActivator, var_iuser3) & ~g_iPreventFlags);
 		rg_reset_maxspeed(iActivator);
 	}
@@ -231,27 +200,21 @@ public rt_revive_cancelled(const iEnt, const id, const iActivator, const modes_s
 		set_member(iActivator, m_bIsDefusing, false);
 }
 
-public rt_revive_end(const iEnt, const id, const iActivator, const modes_struct:eMode)
-{
-	switch(eMode)
-	{
-		case MODE_REVIVE:
-		{
-			static modes_struct:iMode;
-			iMode = get_entvar(iEnt, var_iuser3);
+public rt_revive_end(const iEnt, const id, const iActivator, const Modes:eMode) {
+	switch(eMode) {
+		case MODE_REVIVE: {
+			new Modes:iMode = Modes:get_entvar(iEnt, var_iuser3);
 
-			if(iMode != MODE_PLANT)
-			{
+			if(iMode != MODE_PLANT) {
 				g_ePlayerData[iActivator][REVIVE_COUNT]++;
 
 				rg_add_account(iActivator, -g_eCvars[REVIVE_COST]);
 			}
 		}
-		case MODE_PLANT: rg_add_account(iActivator, -g_eCvars[PLANTING_COST]);
+		case MODE_PLANT: { rg_add_account(iActivator, -g_eCvars[PLANTING_COST]); }
 	}
 
-	if(g_eCvars[NO_MOVE] == 1)
-	{
+	if(g_eCvars[NO_MOVE] == 1) {
 		set_entvar(iActivator, var_iuser3, get_entvar(iActivator, var_iuser3) & ~g_iPreventFlags);
 		rg_reset_maxspeed(iActivator);
 	}
@@ -260,36 +223,34 @@ public rt_revive_end(const iEnt, const id, const iActivator, const modes_struct:
 		set_member(iActivator, m_bIsDefusing, false);
 }
 
-stock rg_users_count(eMode)
-{
-	static iAliveTs, iAliveCTs;
+stock rg_users_count(const eMode) {
+	new iAliveTs, iAliveCTs;
 	rg_initialize_player_counts(iAliveTs, iAliveCTs);
 
 	if(eMode == 0 && (iAliveTs == 1 && iAliveCTs == 1))
 		return 1;
-	else if(eMode == 1 && (iAliveTs == 1 || iAliveCTs == 1))
+	
+	if(eMode == 1 && (iAliveTs == 1 || iAliveCTs == 1))
 		return 1;
 
 	return 0;
 }
 
-stock Float:rg_get_remaining_time()
-{
+stock Float:rg_get_remaining_time() {
 	return (float(get_member_game(m_iRoundTimeSecs)) - get_gametime() + Float:get_member_game(m_fRoundStartTimeReal));
 }
 
-stock TeamName:rg_get_team_wins_row(const iWins)
-{
+stock TeamName:rg_get_team_wins_row(const iWins) {
 	if(get_member_game(m_iNumConsecutiveCTLoses) >= iWins)
 		return TEAM_TERRORIST;
-	else if(get_member_game(m_iNumConsecutiveTerroristLoses) >= iWins)
+	
+	if(get_member_game(m_iNumConsecutiveTerroristLoses) >= iWins)
 		return TEAM_CT;
 
 	return TEAM_UNASSIGNED;
 }
 
-public RegisterCvars()
-{
+public CreateCvars() {
 	bind_pcvar_string(create_cvar(
 		"rt_access",
 		"",
@@ -418,8 +379,7 @@ public RegisterCvars()
 	);
 
 	new pCvar = get_cvar_pointer("rt_force_fwd_mode");
+
 	if(pCvar)
-	{
 		bind_pcvar_num(pCvar, g_eCvars[FORCE_FWD_MODE]);
-	}
 }
