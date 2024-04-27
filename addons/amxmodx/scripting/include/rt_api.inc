@@ -9,7 +9,7 @@
 #endif
 #define _rt_api_included
 
-public stock const VERSION[] = "1.2.2";
+public stock const VERSION[] = "1.2.3";
 public stock const AUTHORS[] = "DEV-CS.RU Community";
 
 /**
@@ -165,6 +165,7 @@ stock UTIL_RemoveCorpses(const id = 0, const szClassName[] = DEAD_BODY_CLASSNAME
 
 			set_entvar(iEnt, var_flags, FL_KILLME);
 			set_entvar(iEnt, var_nextthink, 0.0);
+			set_entvar(iEnt, var_iuser1, 0);
 
 			if(iActivator)
 				break;

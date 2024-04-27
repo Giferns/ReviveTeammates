@@ -260,14 +260,14 @@ public Corpse_Think(const iEnt) {
 
 			get_entvar(iActivator, var_origin, g_fSpawnOrigin);
 
+			UTIL_RemoveCorpses(iPlayer, DEAD_BODY_CLASSNAME);
+
 			EnableHookChain(g_iGetPlayerSpawnSpot_HookChain);
 			rg_round_respawn(iPlayer);
 			DisableHookChain(g_iGetPlayerSpawnSpot_HookChain);
 
 			if(is_user_alive(iPlayer))
 				engfunc(EngFunc_SetOrigin, iPlayer, g_fSpawnOrigin);
-
-			UTIL_RemoveCorpses(iPlayer, DEAD_BODY_CLASSNAME);
 		}
 
 		if(!is_user_alive(iActivator)) {
