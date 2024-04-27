@@ -54,6 +54,7 @@ public plugin_init() {
 	RegisterHookChain(RG_CBasePlayer_UseEmpty, "CBasePlayer_UseEmpty_Pre", false);
 	g_iGetPlayerSpawnSpot_HookChain = RegisterHookChain(RG_CSGameRules_GetPlayerSpawnSpot, "CSGameRules_GetPlayerSpawnSpot_Pre", false);
 	DisableHookChain(g_iGetPlayerSpawnSpot_HookChain);
+	RegisterHookChain(RG_CBasePlayer_Spawn, "CBasePlayer_Spawn_Pre", .post = 0);
 
 	g_eForwards[ReviveStart] = CreateMultiForward("rt_revive_start", ET_STOP, FP_CELL, FP_CELL, FP_CELL, FP_CELL);
 	g_eForwards[ReviveLoop_Pre] = CreateMultiForward("rt_revive_loop_pre", ET_STOP, FP_CELL, FP_CELL, FP_CELL, FP_FLOAT, FP_CELL);
@@ -66,9 +67,17 @@ public plugin_init() {
 	g_iPluginLoaded = is_plugin_loaded("rt_planting.amxx", true);
 }
 
+public CBasePlayer_Spawn_Pre(id) {
+	PlayerSpawnOrDisconnect(id);
+}
+
 public client_disconnected(id) {
 	g_flLastUse[id] = 0.0;
 
+	PlayerSpawnOrDisconnect(id);
+}
+
+PlayerSpawnOrDisconnect(id) {
 	new iActivator = UTIL_RemoveCorpses(id, DEAD_BODY_CLASSNAME);
 
 	if(is_user_connected(iActivator)) {
