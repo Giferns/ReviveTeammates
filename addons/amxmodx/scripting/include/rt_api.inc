@@ -9,7 +9,7 @@
 #endif
 #define _rt_api_included
 
-public stock const VERSION[] = "1.2.3";
+public stock const VERSION[] = "1.2.4";
 public stock const AUTHORS[] = "DEV-CS.RU Community";
 
 /**
@@ -141,7 +141,7 @@ forward rt_creating_corpse_start(const iEnt, const id);
  *
  * @noreturn
  */
-forward rt_creating_corpse_end(const iEnt, const id, const vOrigin[3]);
+forward rt_creating_corpse_end(const iEnt, const id, const Float:vOrigin[3]);
 
 /**
  * Removal of corpses
