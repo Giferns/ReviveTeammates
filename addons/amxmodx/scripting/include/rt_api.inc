@@ -30,12 +30,12 @@ public stock const AUTHORS[] = "DEV-CS.RU Community";
 #endif
 
 /**
- * The maximum buffer size required to store a HUD/DHUD colors
+ * The maximum buffer size required to store a Hud/DHud colors
  */
 #define MAX_COLORS_LENGTH 16
 
 /**
- * The maximum buffer size required to store a HUD/DHUD coordinates
+ * The maximum buffer size required to store a Hud/DHud coordinates
  */
 #define MAX_COORDS_LENGTH 16
 
@@ -57,13 +57,14 @@ new const DEAD_BODY_CLASSNAME[] = "rt_corpse_empty";
  * Called after the activator starts resurrection/planting (on press USE - `E`)
  *
  * @param iEnt           Corpse entity index
- * @param id             Player id who can be ressurected
+ * @param iPlayer        Player id who can be ressurected
  * @param iActivator     Player id who ressurect
  * @param eMode          MODE_REVIVE - started the resurrection, MODE_PLANT - started planting
  *
- * @noreturn
+ * @return               PLUGIN_CONTINUE to start resurrection/planting
+ *                       PLUGIN_HANDLED to stop resurrection/planting
  */
-forward rt_revive_start(const iEnt, const id, const iActivator, const Modes:eMode);
+forward rt_revive_start(const iEnt, const iPlayer, const iActivator, const Modes:eMode);
 
 /**
  * PreThink on resurrection/planting
@@ -71,15 +72,15 @@ forward rt_revive_start(const iEnt, const id, const iActivator, const Modes:eMod
  * @note                 Timer can be 0.0
  *
  * @param iEnt           Corpse entity index
- * @param id             Player id who can be ressurected
+ * @param iPlayer        Player id who can be ressurected
  * @param iActivator     Player id who ressurect
- * @param timer          Resurrection time
+ * @param fTimer         Resurrection time
  * @param eMode          MODE_REVIVE - the player continues to be resurrected, MODE_PLANT - the player continues to be planted
  *
  * @return               PLUGIN_CONTINUE to continue resurrection/planting
  *                       PLUGIN_HANDLED to stop resurrection/planting
  */
-forward rt_revive_loop_pre(const iEnt, const id, const iActivator, const Float:timer, Modes:eMode);
+forward rt_revive_loop_pre(const iEnt, const iPlayer, const iActivator, const Float:fTimer, Modes:eMode);
 
 /**
  * PostThink on resurrection/planting
@@ -87,80 +88,79 @@ forward rt_revive_loop_pre(const iEnt, const id, const iActivator, const Float:t
  * @note                 Timer can't be 0.0
  *
  * @param iEnt           Corpse entity index
- * @param id             Player id who can be ressurected
+ * @param iPlayer        Player id who can be ressurected
  * @param iActivator     Player id who ressurect
- * @param timer          Resurrection time
+ * @param fTimer         Resurrection time
  * @param eMode          MODE_REVIVE - the player continues to be resurrected, MODE_PLANT - the player continues to be planted
  *
- * @return               PLUGIN_CONTINUE to continue resurrection/planting
- *                       PLUGIN_HANDLED to stop resurrection/planting
+ * @noreturn
  */
-forward rt_revive_loop_post(const iEnt, const id, const iActivator, const Float:timer, Modes:eMode);
+forward rt_revive_loop_post(const iEnt, const iPlayer, const iActivator, const Float:fTimer, Modes:eMode);
 
 /**
  * Called after the resurrection/planting is ending
  *
  * @param iEnt           Corpse entity index
- * @param id             Player id who can be ressurected
+ * @param iPlayer        Player id who can be ressurected
  * @param iActivator     Player id who ressurect
  * @param eMode          MODE_REVIVE - the player was resurrected, MODE_PLANT - the player was planted
  *
  * @noreturn
  */
-forward rt_revive_end(const iEnt, const id, const iActivator, const Modes:eMode);
+forward rt_revive_end(const iEnt, const iPlayer, const iActivator, const Modes:eMode);
 
 /**
  * Called when the player has stopped resurrecting/planting
  *
  * @param iEnt           Corpse entity index
- * @param id             Player id who can be ressurected or RT_NULLENT
+ * @param iPlayer        Player id who can be ressurected or RT_NULLENT
  * @param iActivator     Player id who ressurect or RT_NULLENT
  * @param eMode          MODE_REVIVE - stopped the resurrection, MODE_PLANT - stopped planting
  *
  * @noreturn
  */
-forward rt_revive_cancelled(const iEnt, const id, const iActivator, const Modes:eMode);
+forward rt_revive_cancelled(const iEnt, const iPlayer, const iActivator, const Modes:eMode);
 
 /**
  * Called before a corpse is created
  *
  * @param iEnt           Corpse entity index
- * @param id             Player id whose corpse
+ * @param iPlayer        Player id whose corpse
  *
  * @return               PLUGIN_CONTINUE to continue the created of a corpse
  *                       PLUGIN_HANDLED to stop the created of a corpse
  */
-forward rt_creating_corpse_start(const iEnt, const id);
+forward rt_creating_corpse_start(const iEnt, const iPlayer);
 
 /**
  * Called after the creation of the corpse is completed
  *
  * @param iEnt           Corpse entity index
- * @param id             Player id whose corpse
- * @param vOrigin        Coordinates of the corpse
+ * @param iPlayer        Player id whose corpse
+ * @param fVecOrigin     Coordinates of the corpse
  *
  * @noreturn
  */
-forward rt_creating_corpse_end(const iEnt, const id, const Float:vOrigin[3]);
+forward rt_creating_corpse_end(const iEnt, const iPlayer, const Float:fVecOrigin[3]);
 
 /**
  * Removal of corpses
  *
- * @param id             Player id whose corpse or 0 for all corpses
+ * @param iPlayer        Player id whose corpse or 0 for all corpses
  * @param szClassName    Entity classname
  *
  * @return               Player id who is resurrecting or 0
  */
-stock UTIL_RemoveCorpses(const id = 0, const szClassName[] = DEAD_BODY_CLASSNAME) {
+stock RemoveCorpses(const iPlayer = 0, const szClassName[] = DEAD_BODY_CLASSNAME) {
 	new iEnt = RT_NULLENT;
 	new iActivator, iOwner;
 
 	while((iEnt = rg_find_ent_by_class(iEnt, szClassName)) > 0) {
 		if(!is_nullent(iEnt)) {
-			if(id && (iOwner = get_entvar(iEnt, var_owner)) != id)
+			if(iPlayer && (iOwner = get_entvar(iEnt, var_owner)) != iPlayer)
 				continue;
 
-			if(id && iOwner == id)
+			if(iPlayer && iOwner == iPlayer)
 				iActivator = get_entvar(iEnt, var_iuser1);
 
 			set_entvar(iEnt, var_flags, FL_KILLME);
@@ -180,36 +180,36 @@ stock UTIL_RemoveCorpses(const id = 0, const szClassName[] = DEAD_BODY_CLASSNAME
  *
  * @param eForward       Forward type
  * @param iEnt           Corpse entity index
- * @param id             Player id whose corpse
+ * @param iPlayer        Player id whose corpse
  * @param iActivator     Player id who ressurect
  * @param eMode          MODE_REVIVE - stopped the resurrection, MODE_PLANT - stopped planting
  *
  * @noreturn
  */
-stock UTIL_ResetEntityThink(const eForward, const iEnt, const id, const iActivator, const Modes:eMode) {
+stock ResetCorpseThink(const eForward, const iEnt, iPlayer, iActivator, const Modes:eMode) {
 	if(!is_nullent(iEnt)) {
 		set_entvar(iEnt, var_nextthink, get_gametime() + 1.0);
 		set_entvar(iEnt, var_iuser1, 0);
 	}
 
-	new iPlayerEnt = is_user_connected(id) ? id : RT_NULLENT;
-	new iActivatorEnt = is_user_connected(iActivator) ? iActivator : RT_NULLENT;
+	iPlayer = is_user_connected(iPlayer) ? iPlayer : RT_NULLENT;
+	iActivator = is_user_connected(iActivator) ? iActivator : RT_NULLENT;
 
-	ExecuteForward(eForward, _, iEnt, iPlayerEnt, iActivatorEnt, eMode);
+	ExecuteForward(eForward, _, iEnt, iPlayer, iActivator, eMode);
 }
 
 /**
  * Notifying players in chat
  *
- * @param id             Player id or 0 to display to all clients
+ * @param iPlayer        Player id or 0 to display to all clients
  * @param iSender        Player id used as the message sender or color type
  * @param szFmtRules     Formatting rules
  *
  * @noreturn
  */
-stock UTIL_NotifyClient(const id, const iSender, const szFmtRules[], any:...) {
-	new szMessage[192];
-	SetGlobalTransTarget(id);
-	vformat(szMessage, charsmax(szMessage), szFmtRules, 4);
-	client_print_color(id, iSender, szMessage);
+stock NotifyClient(const iPlayer, const iSender, any:...) {
+	new szMessage[MAX_MESSAGE_LENGTH];
+	SetGlobalTransTarget(iPlayer);
+	vformat(szMessage, charsmax(szMessage), "%l", 3);
+	client_print_color(iPlayer, iSender, "%l %s", "RT_CHAT_TAG", szMessage);
 }
