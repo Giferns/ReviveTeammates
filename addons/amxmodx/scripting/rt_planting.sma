@@ -59,7 +59,7 @@ public rt_revive_start(const iEnt, const id, const iActivator, const Modes:eMode
 		}
 
 		if(iMode == MODE_PLANT) {
-			UTIL_NotifyClient(iActivator, print_team_red, "%l%l", "RT_CHAT_TAG", "RT_IS_PLANTED");
+			UTIL_NotifyClient(iActivator, print_team_red, "%l%l", "RT_CHAT_TAG", "RT_IS_PLANTED", id);
 			return PLUGIN_HANDLED;
 		}
 	}

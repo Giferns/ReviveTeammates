@@ -135,18 +135,13 @@ public rt_revive_end(const iEnt, const id, const iActivator, const Modes:eMode) 
 	}
 }
 
-public rt_creating_corpse_end(const iEnt, const id, const origin[3]) {
+public rt_creating_corpse_end(const iEnt, const id, const Float:vOrigin[3]) {
 	if(g_eCvars[CORPSE_SPRITE][0] == EOS)
 		return;
 
 	new iEntSprite = rg_create_entity("info_target");
 
-	new Float:fOrigin[3];
-
-	for(new i; i < 3; i++)
-		fOrigin[i] = float(origin[i]);
-
-	engfunc(EngFunc_SetOrigin, iEntSprite, fOrigin);
+	engfunc(EngFunc_SetOrigin, iEntSprite, vOrigin);
 	engfunc(EngFunc_SetModel, iEntSprite, g_eCvars[CORPSE_SPRITE]);
 
 	set_entvar(iEntSprite, var_classname, CORPSE_SPRITE_CLASSNAME);
