@@ -63,7 +63,7 @@ public plugin_cfg() {
 	}
 }
 
-public rt_revive_end(const iEnt, const id, const iActivator, const Modes:eMode) {
+public rt_revive_end(const iEnt, const iPlayer, const iActivator, const Modes:eMode) {
 	switch(eMode) {
 		case MODE_REVIVE: {
 			new Modes:iMode = Modes:get_entvar(iEnt, var_iuser3);
@@ -73,22 +73,22 @@ public rt_revive_end(const iEnt, const id, const iActivator, const Modes:eMode) 
 					rg_add_health_to_player(iActivator, g_eCvars[REVIVE_HEALTH]);
 
 				if(g_eCvars[HEALTH])
-					set_entvar(id, var_health, floatclamp(g_eCvars[HEALTH], 1.0, Float:get_entvar(id, var_max_health)));
+					set_entvar(iPlayer, var_health, floatclamp(g_eCvars[HEALTH], 1.0, Float:get_entvar(iPlayer, var_max_health)));
 
 				if(g_eCvars[ARMOR])
-					rg_set_user_armor(id, g_eCvars[ARMOR], ArmorType:g_eCvars[ARMOR_TYPE]);
+					rg_set_user_armor(iPlayer, g_eCvars[ARMOR], ArmorType:g_eCvars[ARMOR_TYPE]);
 
 				if(g_iWeapons > 0) {
-					rg_remove_all_items(id);
+					rg_remove_all_items(iPlayer);
 
 					for(new i; i <= g_iWeapons; i++) {
-						new iWeapon = rg_give_item(id, g_szWeapon[i]);
+						new iWeapon = rg_give_item(iPlayer, g_szWeapon[i]);
 
 						if(!is_nullent(iWeapon)) {
 							new WeaponIdType:iWeaponType = WeaponIdType:get_member(iWeapon, m_iId);
 
 							if(iWeaponType != WEAPON_KNIFE && iWeaponType != WEAPON_SHIELDGUN)
-								rg_set_user_bpammo(id, iWeaponType, rg_get_iteminfo(iWeapon, ItemInfo_iMaxAmmo1));
+								rg_set_user_bpammo(iPlayer, iWeaponType, rg_get_iteminfo(iWeapon, ItemInfo_iMaxAmmo1));
 						}
 					}
 				}
@@ -97,7 +97,7 @@ public rt_revive_end(const iEnt, const id, const iActivator, const Modes:eMode) 
 					ExecuteHamB(Ham_AddPoints, iActivator, g_eCvars[FRAGS], false);
 				
 				if(g_eCvars[NO_DEATHPOINT])
-					set_member(id, m_iDeaths, max(get_member(id, m_iDeaths) - 1, 0));
+					set_member(iPlayer, m_iDeaths, max(get_member(iPlayer, m_iDeaths) - 1, 0));
 			}
 		}
 		case MODE_PLANT: {
@@ -107,8 +107,8 @@ public rt_revive_end(const iEnt, const id, const iActivator, const Modes:eMode) 
 	}
 }
 
-stock rg_add_health_to_player(const id, const Float:flHealth) {
-	set_entvar(id, var_health, floatclamp(Float:get_entvar(id, var_health) + flHealth, 1.0, Float:get_entvar(id, var_max_health)));
+stock rg_add_health_to_player(const iPlayer, const Float:flHealth) {
+	set_entvar(iPlayer, var_health, floatclamp(Float:get_entvar(iPlayer, var_health) + flHealth, 1.0, Float:get_entvar(iPlayer, var_max_health)));
 }
 
 public CreateCvars() {

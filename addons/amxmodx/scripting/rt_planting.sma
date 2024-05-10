@@ -45,21 +45,21 @@ public CSGameRules_CleanUpMap_Post() {
 	arrayset(g_ePlayerData[0][_:0], 0, sizeof(g_ePlayerData) * sizeof(g_ePlayerData[]));
 }
 
-public client_disconnected(id) {
-	g_ePlayerData[id][PLANTING_COUNT] = 0;
+public client_disconnected(iPlayer) {
+	g_ePlayerData[iPlayer][PLANTING_COUNT] = 0;
 }
 
-public rt_revive_start(const iEnt, const id, const iActivator, const Modes:eMode) {
+public rt_revive_start(const iEnt, const iPlayer, const iActivator, const Modes:eMode) {
 	new Modes:iMode = Modes:get_entvar(iEnt, var_iuser3);
 	
 	if(eMode == MODE_PLANT) {
 		if(g_ePlayerData[iActivator][PLANTING_COUNT] >= g_eCvars[MAX_PLANTING]) {
-			UTIL_NotifyClient(iActivator, print_team_red, "%l%l", "RT_CHAT_TAG", "RT_PLANTING_COUNT");
+			NotifyClient(iActivator, print_team_red, "RT_PLANTING_COUNT");
 			return PLUGIN_HANDLED;
 		}
 
 		if(iMode == MODE_PLANT) {
-			UTIL_NotifyClient(iActivator, print_team_red, "%l%l", "RT_CHAT_TAG", "RT_IS_PLANTED", id);
+			NotifyClient(iActivator, print_team_red, "RT_IS_PLANTED", iPlayer);
 			return PLUGIN_HANDLED;
 		}
 	}
@@ -67,25 +67,25 @@ public rt_revive_start(const iEnt, const id, const iActivator, const Modes:eMode
 	return PLUGIN_CONTINUE;
 }
 
-public rt_revive_end(const iEnt, const id, const iActivator, const Modes:eMode) {
+public rt_revive_end(const iEnt, const iPlayer, const iActivator, const Modes:eMode) {
 	switch(eMode) {
 		case MODE_REVIVE: {
 			new Modes:iMode = Modes:get_entvar(iEnt, var_iuser3);
 
 			if(iMode == MODE_PLANT) {
-				new Float:vOrigin[3];
-				get_entvar(iActivator, var_origin, vOrigin);
-				UTIL_MakeExplosionEffects(vOrigin);
+				new Float:fVecOrigin[3];
+				get_entvar(iActivator, var_origin, fVecOrigin);
+				MakeExplosionEffects(fVecOrigin);
 				
 				new iPlanter = get_entvar(iEnt, var_iuser4);
 				
-				for(new iVictim = 1, Float:fReduceDamage, Float:vecEnd[3]; iVictim <= MaxClients; iVictim++) {
-					if(!is_user_alive(iVictim) || TeamName:get_member(iVictim, m_iTeam) != TeamName:get_member(id, m_iTeam))
+				for(new iVictim = 1, Float:fReduceDamage, Float:fVecEnd[3]; iVictim <= MaxClients; iVictim++) {
+					if(!is_user_alive(iVictim) || TeamName:get_member(iVictim, m_iTeam) != TeamName:get_member(iPlayer, m_iTeam))
 						continue;
 					
-					get_entvar(iVictim, var_origin, vecEnd);
+					get_entvar(iVictim, var_origin, fVecEnd);
 
-					if((fReduceDamage = (g_eCvars[DAMAGE] - vector_distance(vOrigin, vecEnd) * (g_eCvars[DAMAGE] / g_eCvars[RADIUS]))) < 1.0)
+					if((fReduceDamage = (g_eCvars[DAMAGE] - vector_distance(fVecOrigin, fVecEnd) * (g_eCvars[DAMAGE] / g_eCvars[RADIUS]))) < 1.0)
 						continue;
 					
 					set_member(iVictim, m_LastHitGroup, HITGROUP_GENERIC);
@@ -93,11 +93,11 @@ public rt_revive_end(const iEnt, const id, const iActivator, const Modes:eMode) 
 					ExecuteHamB(Ham_TakeDamage, iVictim, iEnt, iPlanter, fReduceDamage, DMG_GRENADE | DMG_ALWAYSGIB);
 				}
 
-				UTIL_RemoveCorpses(id, DEAD_BODY_CLASSNAME);
+				RemoveCorpses(iPlayer, DEAD_BODY_CLASSNAME);
 			}
 		}
 		case MODE_PLANT: {
-			UTIL_NotifyClient(iActivator, print_team_blue, "%l%l", "RT_CHAT_TAG", "RT_PLANTING", id);
+			NotifyClient(iActivator, print_team_blue, "RT_PLANTING", iPlayer);
 			
 			g_ePlayerData[iActivator][PLANTING_COUNT]++;
 
@@ -108,23 +108,23 @@ public rt_revive_end(const iEnt, const id, const iActivator, const Modes:eMode) 
 	}
 }
 
-stock UTIL_MakeExplosionEffects(const Float:vecOrigin[3]) {
-	message_begin_f(MSG_PAS, SVC_TEMPENTITY, vecOrigin);
+stock MakeExplosionEffects(const Float:fVecOrigin[3]) {
+	message_begin_f(MSG_PAS, SVC_TEMPENTITY, fVecOrigin);
 	write_byte(TE_EXPLOSION);
-	write_coord_f(vecOrigin[0]);
-	write_coord_f(vecOrigin[1]);
-	write_coord_f(vecOrigin[2] + 20.0);
+	write_coord_f(fVecOrigin[0]);
+	write_coord_f(fVecOrigin[1]);
+	write_coord_f(fVecOrigin[2] + 20.0);
 	write_short(g_szModels[2]);
 	write_byte(25);
 	write_byte(30);
 	write_byte(TE_EXPLFLAG_NONE);
 	message_end();
 	
-	message_begin_f(MSG_PAS, SVC_TEMPENTITY, vecOrigin);
+	message_begin_f(MSG_PAS, SVC_TEMPENTITY, fVecOrigin);
 	write_byte(TE_EXPLOSION);
-	write_coord_f(vecOrigin[0] + random_float(-64.0, 64.0));
-	write_coord_f(vecOrigin[1] + random_float(-64.0, 64.0));
-	write_coord_f(vecOrigin[2] + random_float(30.0, 35.0));
+	write_coord_f(fVecOrigin[0] + random_float(-64.0, 64.0));
+	write_coord_f(fVecOrigin[1] + random_float(-64.0, 64.0));
+	write_coord_f(fVecOrigin[2] + random_float(30.0, 35.0));
 	write_short(g_szModels[1]);
 	write_byte(30);
 	write_byte(30);
@@ -132,11 +132,11 @@ stock UTIL_MakeExplosionEffects(const Float:vecOrigin[3]) {
 	message_end();
 
 	for(new i; i < 3; i++) {
-		message_begin_f(MSG_PAS, SVC_TEMPENTITY, vecOrigin);
+		message_begin_f(MSG_PAS, SVC_TEMPENTITY, fVecOrigin);
 		write_byte(TE_SPRITE);
-		write_coord_f(vecOrigin[0] + random_float(-256.0, 256.0));
-		write_coord_f(vecOrigin[1] + random_float(-256.0, 256.0));
-		write_coord_f(vecOrigin[2] + random_float(-10.0, 10.0));
+		write_coord_f(fVecOrigin[0] + random_float(-256.0, 256.0));
+		write_coord_f(fVecOrigin[1] + random_float(-256.0, 256.0));
+		write_coord_f(fVecOrigin[2] + random_float(-10.0, 10.0));
 		write_short(g_szModels[i]);
 		write_byte(30);
 		write_byte(150);
