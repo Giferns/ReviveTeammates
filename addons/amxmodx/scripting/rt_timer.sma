@@ -91,36 +91,36 @@ public plugin_init() {
 	g_eTimeData[START_TIME] = (1.0 - g_eTimeData[GLOBAL_TIME] / float(g_eTimeData[CEIL_TIME])) * 100.0;
 }
 
-public rt_revive_start(const iEnt, const id, const iActivator, const Modes:eMode) {
+public rt_revive_start(const iEnt, const iPlayer, const iActivator, const Modes:eMode) {
 	switch(g_eCvars[TIMER_TYPE]) {
 		case 0: {
-			formatex(g_szTimer[id], charsmax(g_szTimer[]), TIMER_BEGIN);
+			formatex(g_szTimer[iPlayer], charsmax(g_szTimer[]), TIMER_BEGIN);
 
 			for(new i; i < floatround(g_eTimeData[GLOBAL_TIME]); i++)
-				add(g_szTimer[id], charsmax(g_szTimer[]), TIMER_ADD);
+				add(g_szTimer[iPlayer], charsmax(g_szTimer[]), TIMER_ADD);
 
-			add(g_szTimer[id], charsmax(g_szTimer[]), TIMER_END);
+			add(g_szTimer[iPlayer], charsmax(g_szTimer[]), TIMER_END);
 
-			DisplayHUDMessage(iActivator, id, eMode);
+			DisplayHudMessage(iPlayer, iActivator, eMode);
 		}
 		case 1: {
 			rg_send_bartime2(iActivator, g_eTimeData[CEIL_TIME], g_eTimeData[START_TIME]);
 
-			if(eMode == MODE_REVIVE && is_user_connected(id))
-				rg_send_bartime2(id, g_eTimeData[CEIL_TIME], g_eTimeData[START_TIME]);
+			if(eMode == MODE_REVIVE && is_user_connected(iPlayer))
+				rg_send_bartime2(iPlayer, g_eTimeData[CEIL_TIME], g_eTimeData[START_TIME]);
 		}
 	}
 }
 
-public rt_revive_loop_post(const iEnt, const id, const iActivator, const Float:timer, Modes:eMode) {
+public rt_revive_loop_post(const iEnt, const iPlayer, const iActivator, const Float:fTimer, Modes:eMode) {
 	if(!g_eCvars[TIMER_TYPE]) {
-		replace(g_szTimer[id], charsmax(g_szTimer[]), TIMER_REPLACE_SYMB, TIMER_REPLACE_WITH);
+		replace(g_szTimer[iPlayer], charsmax(g_szTimer[]), TIMER_REPLACE_SYMB, TIMER_REPLACE_WITH);
 
-		DisplayHUDMessage(iActivator, id, eMode);
+		DisplayHudMessage(iPlayer, iActivator, eMode);
 	}
 }
 
-public rt_revive_cancelled(const iEnt, const id, const iActivator, const Modes:eMode) {
+public rt_revive_cancelled(const iEnt, const iPlayer, const iActivator, const Modes:eMode) {
 	switch(g_eCvars[TIMER_TYPE]) {
 		case 0: {
 			if(iActivator != RT_NULLENT)
@@ -130,16 +130,16 @@ public rt_revive_cancelled(const iEnt, const id, const iActivator, const Modes:e
 			if(iActivator != RT_NULLENT)
 				rg_send_bartime(iActivator, 0);
 			
-			if(eMode == MODE_REVIVE && id != RT_NULLENT)
-				rg_send_bartime(id, 0);
+			if(eMode == MODE_REVIVE && iPlayer != RT_NULLENT)
+				rg_send_bartime(iPlayer, 0);
 		}
 	}
 }
 
-stock DisplayHUDMessage(const id, const dead, const Modes:eMode) {
+stock DisplayHudMessage(const iPlayer, const iActivator, const Modes:eMode) {
 	set_hudmessage(g_eHudData[eMode][COLOR_R], g_eHudData[eMode][COLOR_G], g_eHudData[eMode][COLOR_B],
 	g_eHudData[eMode][COORD_X], g_eHudData[eMode][COORD_Y], .holdtime = g_eTimeData[GLOBAL_TIME]);
-	ShowSyncHudMsg(id, g_iHudSyncObj, g_szTimer[dead]);
+	ShowSyncHudMsg(iActivator, g_iHudSyncObj, g_szTimer[iPlayer]);
 }
 
 public CreateCvars() {
