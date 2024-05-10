@@ -96,56 +96,56 @@ public AddToFullPack_Pre(es, e, ent, host, flags, player, pSet) {
 	return FMRES_IGNORED;
 }
 
-public rt_revive_start(const iEnt, const id, const iActivator, const Modes:eMode) {
+public rt_revive_start(const iEnt, const iPlayer, const iActivator, const Modes:eMode) {
 	switch(eMode) {
 		case MODE_REVIVE: {
 			if(g_eCvars[SPECTATOR]) {
-				rg_internal_cmd(id, "specmode", "4");
-				set_entvar(id, var_iuser2, iActivator);
-				set_member(id, m_hObserverTarget, iActivator);
-				set_member(id, m_flNextObserverInput, get_gametime() + 1.25);
+				rg_internal_cmd(iPlayer, "specmode", "4");
+				set_entvar(iPlayer, var_iuser2, iActivator);
+				set_member(iPlayer, m_hObserverTarget, iActivator);
+				set_member(iPlayer, m_flNextObserverInput, get_gametime() + 1.25);
 			}
 
 			if(g_eCvars[NOTIFY_DHUD]) {
-				DisplayDHUDMessage(iActivator, "%l", eMode, "RT_DHUD_REVIVE", id);
-				DisplayDHUDMessage(id, "%l", eMode, "RT_DHUD_REVIVE2", iActivator);
+				DisplayDHudMessage(iActivator, eMode, "RT_DHUD_REVIVE", iPlayer);
+				DisplayDHudMessage(iPlayer, eMode, "RT_DHUD_REVIVE2", iActivator);
 			}
 		}
 		case MODE_PLANT: {
 			if(g_eCvars[NOTIFY_DHUD])
-				DisplayDHUDMessage(iActivator, "%l", eMode, "RT_DHUD_PLANTING", id);
+				DisplayDHudMessage(iActivator, eMode, "RT_DHUD_PLANTING", iPlayer);
 		}
 	}
 }
 
-public rt_revive_cancelled(const iEnt, const id, const iActivator, const Modes:eMode) {
+public rt_revive_cancelled(const iEnt, const iPlayer, const iActivator, const Modes:eMode) {
 	if(g_eCvars[NOTIFY_DHUD]) {
 		if(iActivator != RT_NULLENT)
-			ClearDHUDMessages(iActivator);
+			ClearDHudMessages(iActivator);
 
-		if(id != RT_NULLENT)
-			ClearDHUDMessages(id);
+		if(iPlayer != RT_NULLENT)
+			ClearDHudMessages(iPlayer);
 	}
 }
 
-public rt_revive_end(const iEnt, const id, const iActivator, const Modes:eMode) {
+public rt_revive_end(const iEnt, const iPlayer, const iActivator, const Modes:eMode) {
 	if(g_eCvars[NOTIFY_DHUD]) {
-		ClearDHUDMessages(iActivator);
-		ClearDHUDMessages(id);
+		ClearDHudMessages(iActivator);
+		ClearDHudMessages(iPlayer);
 	}
 }
 
-public rt_creating_corpse_end(const iEnt, const id, const Float:vOrigin[3]) {
+public rt_creating_corpse_end(const iEnt, const iPlayer, const Float:fVecOrigin[3]) {
 	if(g_eCvars[CORPSE_SPRITE][0] == EOS)
 		return;
 
 	new iEntSprite = rg_create_entity("info_target");
 
-	engfunc(EngFunc_SetOrigin, iEntSprite, vOrigin);
+	engfunc(EngFunc_SetOrigin, iEntSprite, fVecOrigin);
 	engfunc(EngFunc_SetModel, iEntSprite, g_eCvars[CORPSE_SPRITE]);
 
 	set_entvar(iEntSprite, var_classname, CORPSE_SPRITE_CLASSNAME);
-	set_entvar(iEntSprite, var_owner, id);
+	set_entvar(iEntSprite, var_owner, iPlayer);
 	set_entvar(iEntSprite, var_iuser1, iEnt);
 	set_entvar(iEntSprite, var_team, TeamName:get_entvar(iEnt, var_team));
 	set_entvar(iEntSprite, var_scale, g_eCvars[SPRITE_SCALE]);
@@ -155,31 +155,31 @@ public rt_creating_corpse_end(const iEnt, const id, const Float:vOrigin[3]) {
 	set_entvar(iEntSprite, var_renderamt, 255.0);
 	set_entvar(iEntSprite, var_nextthink, get_gametime() + 0.1);
 
-	SetThink(iEntSprite, "Corpse_Sprite_Think");
+	SetThink(iEntSprite, "CorpseSprite_Think");
 }
 
-public Corpse_Sprite_Think(const iEnt) {
+public CorpseSprite_Think(const iEnt) {
 	if(is_nullent(get_entvar(iEnt, var_iuser1))) {
-		UTIL_RemoveCorpses(get_entvar(iEnt, var_owner), CORPSE_SPRITE_CLASSNAME);
+		RemoveCorpses(get_entvar(iEnt, var_owner), CORPSE_SPRITE_CLASSNAME);
 		return;
 	}
 
 	set_entvar(iEnt, var_nextthink, get_gametime() + 0.1);
 }
 
-stock DisplayDHUDMessage(const id, const szFmtRules[], const Modes:eMode, any:...) {
-	new szMessage[MAX_MESSAGE_LENGTH];
-	SetGlobalTransTarget(id);
-	vformat(szMessage, charsmax(szMessage), szFmtRules, 4);
+stock DisplayDHudMessage(const iPlayer, const Modes:eMode, any:...) {
+	new szMessage[128];
+	SetGlobalTransTarget(iPlayer);
+	vformat(szMessage, charsmax(szMessage), "%l", 3);
 
 	set_dhudmessage(g_eDHudData[eMode][COLOR_R], g_eDHudData[eMode][COLOR_G], g_eDHudData[eMode][COLOR_B],
 	g_eDHudData[eMode][COORD_X], g_eDHudData[eMode][COORD_Y], .holdtime = g_fTime);
-	show_dhudmessage(id, szMessage);
+	show_dhudmessage(iPlayer, szMessage);
 }
 
-stock ClearDHUDMessages(const id, const iChannel = 8) {
+stock ClearDHudMessages(const iPlayer, const iChannel = 8) {
 	for(new i; i < iChannel; i++)
-		show_dhudmessage(id, "");
+		show_dhudmessage(iPlayer, "");
 }
 
 public CreateCvars() {

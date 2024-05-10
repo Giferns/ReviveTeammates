@@ -50,29 +50,29 @@ public plugin_precache() {
 	server_exec();
 }
 
-public rt_revive_start(const iEnt, const id, const iActivator, const Modes:eMode) {
+public rt_revive_start(const iEnt, const iPlayer, const iActivator, const Modes:eMode) {
 	switch(eMode) {
-		case MODE_REVIVE: { UTIL_PlaybackSound(iEnt, id, iActivator, SECTION_REVIVE_START); }
-		case MODE_PLANT: { UTIL_PlaybackSound(iEnt, id, iActivator, SECTION_PLANT_START); }
+		case MODE_REVIVE: { PlaybackSound(iEnt, iPlayer, iActivator, SECTION_REVIVE_START); }
+		case MODE_PLANT: { PlaybackSound(iEnt, iPlayer, iActivator, SECTION_PLANT_START); }
 	}
 }
 
-public rt_revive_loop_post(const iEnt, const id, const iActivator, const Float:timer, Modes:eMode) {
+public rt_revive_loop_post(const iEnt, const iPlayer, const iActivator, const Float:fTimer, Modes:eMode) {
 	switch(eMode) {
-		case MODE_REVIVE: { UTIL_PlaybackSound(iEnt, id, iActivator, SECTION_REVIVE_LOOP); }
-		case MODE_PLANT: { UTIL_PlaybackSound(iEnt, id, iActivator, SECTION_PLANT_LOOP); }
+		case MODE_REVIVE: { PlaybackSound(iEnt, iPlayer, iActivator, SECTION_REVIVE_LOOP); }
+		case MODE_PLANT: { PlaybackSound(iEnt, iPlayer, iActivator, SECTION_PLANT_LOOP); }
 	}
 }
 
-public rt_revive_end(const iEnt, const id, const iActivator, const Modes:eMode) {
+public rt_revive_end(const iEnt, const iPlayer, const iActivator, const Modes:eMode) {
 	switch(eMode) {
 		case MODE_REVIVE: {
 			new Modes:iMode = Modes:get_entvar(iEnt, var_iuser3);
 			
 			if(iMode != MODE_PLANT)
-				UTIL_PlaybackSound(iEnt, id, iActivator, SECTION_REVIVE_END);
+				PlaybackSound(iEnt, iPlayer, iActivator, SECTION_REVIVE_END);
 		}
-		case MODE_PLANT: { UTIL_PlaybackSound(iEnt, id, iActivator, SECTION_PLANT_END); }
+		case MODE_PLANT: { PlaybackSound(iEnt, iPlayer, iActivator, SECTION_PLANT_END); }
 	}
 }
 
@@ -119,24 +119,24 @@ public bool:ReadKeyValue(INIParser:iParser, const szKey[], const szValue[]) {
 	return true;
 }
 
-stock UTIL_PlaybackSound(const iEnt, const id, const iActivator, const sections_struct:iSoundSection) {
+stock PlaybackSound(const iEnt, const iPlayer, const iActivator, const sections_struct:iSoundSection) {
 	if(g_iSounds[iSoundSection]) {
 		if(g_eCvars[NEARBY_PLAYERS] == 2 || (g_eCvars[NEARBY_PLAYERS] && (iSoundSection == SECTION_REVIVE_END || iSoundSection == SECTION_PLANT_END)))
-			UTIL_PlaybackSoundNearbyPlayers(iEnt, g_szSounds[iSoundSection][random(g_iSounds[iSoundSection])]);
+			PlaybackSoundNearbyPlayers(iEnt, g_szSounds[iSoundSection][random(g_iSounds[iSoundSection])]);
 		else if(!g_eCvars[NEARBY_PLAYERS]) {
 			rg_send_audio(iActivator, g_szSounds[iSoundSection][random(g_iSounds[iSoundSection])]);
-			rg_send_audio(id, g_szSounds[iSoundSection][random(g_iSounds[iSoundSection])]);
+			rg_send_audio(iPlayer, g_szSounds[iSoundSection][random(g_iSounds[iSoundSection])]);
 		}
 	}
 }
 
-stock UTIL_PlaybackSoundNearbyPlayers(const id, const szSound[]) {
+stock PlaybackSoundNearbyPlayers(const iPlayer, const szSound[]) {
 	new iEnt = RT_NULLENT;
 
-	new Float:vOrigin[3];
-	get_entvar(id, var_vuser4, vOrigin);
+	new Float:fVecOrigin[3];
+	get_entvar(iPlayer, var_vuser4, fVecOrigin);
 	
-	while((iEnt = engfunc(EngFunc_FindEntityInSphere, iEnt, vOrigin, g_eCvars[SOUND_RADIUS])) > 0)
+	while((iEnt = engfunc(EngFunc_FindEntityInSphere, iEnt, fVecOrigin, g_eCvars[SOUND_RADIUS])) > 0)
 		if(ExecuteHam(Ham_IsPlayer, iEnt))
 			rg_send_audio(iEnt, szSound);
 }

@@ -34,7 +34,7 @@ new g_ePlayerData[MAX_PLAYERS + 1][PlayerData];
 
 new g_iAccessFlags, g_iPreventFlags;
 
-new HookChain:g_pHook_ResetMaxSpeed;
+new HookChain:g_hHook_ResetMaxSpeed;
 
 public plugin_precache() {
 	CreateCvars();
@@ -49,7 +49,7 @@ public plugin_init() {
 	register_dictionary("rt_library.txt");
 
 	RegisterHookChain(RG_CSGameRules_CleanUpMap, "CSGameRules_CleanUpMap_Post", true);
-	DisableHookChain(g_pHook_ResetMaxSpeed = RegisterHookChain(RG_CBasePlayer_ResetMaxSpeed, "CBasePlayer_ResetMaxSpeed_Post", true));
+	DisableHookChain(g_hHook_ResetMaxSpeed = RegisterHookChain(RG_CBasePlayer_ResetMaxSpeed, "CBasePlayer_ResetMaxSpeed_Post", true));
 
 	g_iPreventFlags = (PLAYER_PREVENT_CLIMB|PLAYER_PREVENT_JUMP);
 }
@@ -58,15 +58,15 @@ public plugin_cfg() {
 	g_iAccessFlags = read_flags(g_eCvars[ACCESS]);
 
 	if(g_eCvars[NO_MOVE] == 1)
-		EnableHookChain(g_pHook_ResetMaxSpeed);
+		EnableHookChain(g_hHook_ResetMaxSpeed);
 }
 
 public CSGameRules_CleanUpMap_Post() {
 	arrayset(g_ePlayerData[0][_:0], 0, sizeof(g_ePlayerData) * sizeof(g_ePlayerData[]));
 }
 
-public client_disconnected(id) {
-	g_ePlayerData[id][REVIVE_COUNT] = 0;
+public client_disconnected(iPlayer) {
+	g_ePlayerData[iPlayer][REVIVE_COUNT] = 0;
 }
 
 public CBasePlayer_ResetMaxSpeed_Post(const iActivator) {
@@ -74,62 +74,62 @@ public CBasePlayer_ResetMaxSpeed_Post(const iActivator) {
 		set_entvar(iActivator, var_maxspeed, 1.0);
 }
 
-public rt_revive_start(const iEnt, const id, const iActivator, const Modes:eMode) {
+public rt_revive_start(const iEnt, const iPlayer, const iActivator, const Modes:eMode) {
 	if(~get_user_flags(iActivator) & g_iAccessFlags) {
-		UTIL_NotifyClient(iActivator, print_team_red, "%l%l", "RT_CHAT_TAG", "RT_NO_ACCESS");
+		NotifyClient(iActivator, print_team_red, "RT_NO_ACCESS");
 		return PLUGIN_HANDLED;
 	}
 
 	if(m_iCurrentRound < g_eCvars[MIN_ROUND]) {
-		UTIL_NotifyClient(iActivator, print_team_red, "%l%l", "RT_CHAT_TAG", "RT_MIN_ROUND", g_eCvars[MIN_ROUND]);
+		NotifyClient(iActivator, print_team_red, "RT_MIN_ROUND", g_eCvars[MIN_ROUND]);
 		return PLUGIN_HANDLED;
 	}
 
 	if(g_eCvars[BOMB] && rg_is_bomb_planted()) {
-		UTIL_NotifyClient(iActivator, print_team_red, "%l%l", "RT_CHAT_TAG", "RT_BOMB");
+		NotifyClient(iActivator, print_team_red, "RT_BOMB");
 		return PLUGIN_HANDLED;
 	}
 
-	if(g_eCvars[SURVIVOR] && rg_users_count(1)) {
-		UTIL_NotifyClient(iActivator, print_team_red, "%l%l", "RT_CHAT_TAG", "RT_SURVIVOR");
+	if(g_eCvars[DUEL] && rg_users_count(false)) {
+		NotifyClient(iActivator, print_team_red, "RT_DUEL");
 		return PLUGIN_HANDLED;
 	}
 
-	if(g_eCvars[DUEL] && rg_users_count(0)) {
-		UTIL_NotifyClient(iActivator, print_team_red, "%l%l", "RT_CHAT_TAG", "RT_DUEL");
-		return PLUGIN_HANDLED;
-	}
-
-	if(g_eCvars[WIN_DIFF] && (rg_get_team_wins_row(g_eCvars[WIN_DIFF]) == TeamName:get_member(iActivator, m_iTeam))) {
-		UTIL_NotifyClient(iActivator, print_team_red, "%l%l", "RT_CHAT_TAG", "RT_WINS_DOMINATION");
+	if(g_eCvars[SURVIVOR] && rg_users_count(true)) {
+		NotifyClient(iActivator, print_team_red, "RT_SURVIVOR");
 		return PLUGIN_HANDLED;
 	}
 
 	if(g_eCvars[REMAINING_TIME] && rg_get_remaining_time() <= g_eCvars[REMAINING_TIME]) {
-		UTIL_NotifyClient(iActivator, print_team_red, "%l%l", "RT_CHAT_TAG", "RT_REMAINING_TIME");
+		NotifyClient(iActivator, print_team_red, "RT_REMAINING_TIME");
+		return PLUGIN_HANDLED;
+	}
+
+	if(g_eCvars[WIN_DIFF] && (rg_get_team_wins_row(g_eCvars[WIN_DIFF]) == TeamName:get_member(iActivator, m_iTeam))) {
+		NotifyClient(iActivator, print_team_red, "RT_WINS_DOMINATION");
 		return PLUGIN_HANDLED;
 	}
 
 	switch(eMode) {
 		case MODE_REVIVE: {
 			if(g_ePlayerData[iActivator][REVIVE_COUNT] >= g_eCvars[MAX_REVIVES]) {
-				UTIL_NotifyClient(iActivator, print_team_red, "%l%l", "RT_CHAT_TAG", "RT_REVIVE_COUNT");
+				NotifyClient(iActivator, print_team_red, "RT_REVIVE_COUNT");
 				return PLUGIN_HANDLED;
 			}
 
-			if(get_member(id, m_iNumSpawns) > g_eCvars[MAX_SPAWNS]) {
-				UTIL_NotifyClient(iActivator, print_team_red, "%l%l", "RT_CHAT_TAG", "RT_MAX_SPAWNS");
+			if(get_member(iPlayer, m_iNumSpawns) > g_eCvars[MAX_SPAWNS]) {
+				NotifyClient(iActivator, print_team_red, "RT_MAX_SPAWNS");
 				return PLUGIN_HANDLED;
 			}
 
 			if(get_member(iActivator, m_iAccount) < g_eCvars[REVIVE_COST]) {
-				UTIL_NotifyClient(iActivator, print_team_red, "%l%l", "RT_CHAT_TAG", "RT_NO_MONEY");
+				NotifyClient(iActivator, print_team_red, "RT_NO_MONEY");
 				return PLUGIN_HANDLED;
 			}
 		}
 		case MODE_PLANT: {
 			if(get_member(iActivator, m_iAccount) < g_eCvars[PLANTING_COST]) {
-				UTIL_NotifyClient(iActivator, print_team_red, "%l%l", "RT_CHAT_TAG", "RT_NO_MONEY");
+				NotifyClient(iActivator, print_team_red, "RT_NO_MONEY");
 				return PLUGIN_HANDLED;
 			}
 		}
@@ -147,34 +147,34 @@ public rt_revive_start(const iEnt, const id, const iActivator, const Modes:eMode
 	return PLUGIN_CONTINUE;
 }
 
-public rt_revive_loop_pre(const iEnt, const id, const iActivator, const Float:timer, Modes:eMode) {
+public rt_revive_loop_pre(const iEnt, const iPlayer, const iActivator, const Float:fTimer, Modes:eMode) {
 	if(g_eCvars[BOMB] && rg_is_bomb_planted()) {
-		UTIL_NotifyClient(iActivator, print_team_red, "%l%l", "RT_CHAT_TAG", "RT_BOMB");
+		NotifyClient(iActivator, print_team_red, "RT_BOMB");
 		return PLUGIN_HANDLED;
 	}
 
-	if(g_eCvars[DUEL] && rg_users_count(0)) {
-		UTIL_NotifyClient(iActivator, print_team_red, "%l%l", "RT_CHAT_TAG", "RT_DUEL");
+	if(g_eCvars[DUEL] && rg_users_count(false)) {
+		NotifyClient(iActivator, print_team_red, "RT_DUEL");
 		return PLUGIN_HANDLED;
 	}
 
-	if(g_eCvars[SURVIVOR] && rg_users_count(1)) {
-		UTIL_NotifyClient(iActivator, print_team_red, "%l%l", "RT_CHAT_TAG", "RT_SURVIVOR");
+	if(g_eCvars[SURVIVOR] && rg_users_count(true)) {
+		NotifyClient(iActivator, print_team_red, "RT_SURVIVOR");
 		return PLUGIN_HANDLED;
 	}
 
 	if(g_eCvars[REMAINING_TIME] && rg_get_remaining_time() <= g_eCvars[REMAINING_TIME]) {
-		UTIL_NotifyClient(iActivator, print_team_red, "%l%l", "RT_CHAT_TAG", "RT_REMAINING_TIME");
+		NotifyClient(iActivator, print_team_red, "RT_REMAINING_TIME");
 		return PLUGIN_HANDLED;
 	}
 
 	if(g_eCvars[NO_MOVE] == 2) {
-		new Float:vPlOrigin[3], Float:vEntOrigin[3];
-		get_entvar(iActivator, var_origin, vPlOrigin);
-		get_entvar(iEnt, var_vuser4, vEntOrigin);
+		new Float:fVecPlOrigin[3], Float:fVecEntOrigin[3];
+		get_entvar(iActivator, var_origin, fVecPlOrigin);
+		get_entvar(iEnt, var_vuser4, fVecEntOrigin);
 
-		if(vector_distance(vPlOrigin, vEntOrigin) > Float:get_entvar(iEnt, var_fuser2)) {
-			UTIL_NotifyClient(iActivator, print_team_red, "%l%l", "RT_CHAT_TAG", "RT_MAX_DISTANCE");
+		if(vector_distance(fVecPlOrigin, fVecEntOrigin) > Float:get_entvar(iEnt, var_fuser2)) {
+			NotifyClient(iActivator, print_team_red, "RT_MAX_DISTANCE");
 			return PLUGIN_HANDLED;
 		}
 	}
@@ -182,12 +182,12 @@ public rt_revive_loop_pre(const iEnt, const id, const iActivator, const Float:ti
 	return PLUGIN_CONTINUE;
 }
 
-public rt_revive_loop_post(const iEnt, const id, const iActivator, const Float:timer, Modes:eMode) {
+public rt_revive_loop_post(const iEnt, const iPlayer, const iActivator, const Float:fTimer, Modes:eMode) {
 	if(g_eCvars[FORCE_FWD_MODE] && g_eCvars[NO_MOVE] == 1)
 		set_entvar(iActivator, var_maxspeed, 1.0);
 }
 
-public rt_revive_cancelled(const iEnt, const id, const iActivator, const Modes:eMode) {
+public rt_revive_cancelled(const iEnt, const iPlayer, const iActivator, const Modes:eMode) {
 	if(iActivator == RT_NULLENT)
 		return;
 
@@ -200,7 +200,7 @@ public rt_revive_cancelled(const iEnt, const id, const iActivator, const Modes:e
 		set_member(iActivator, m_bIsDefusing, false);
 }
 
-public rt_revive_end(const iEnt, const id, const iActivator, const Modes:eMode) {
+public rt_revive_end(const iEnt, const iPlayer, const iActivator, const Modes:eMode) {
 	switch(eMode) {
 		case MODE_REVIVE: {
 			new Modes:iMode = Modes:get_entvar(iEnt, var_iuser3);
@@ -223,14 +223,14 @@ public rt_revive_end(const iEnt, const id, const iActivator, const Modes:eMode) 
 		set_member(iActivator, m_bIsDefusing, false);
 }
 
-stock rg_users_count(const eMode) {
+stock rg_users_count(const bool:bMode1x1 = false) {
 	new iAliveTs, iAliveCTs;
 	rg_initialize_player_counts(iAliveTs, iAliveCTs);
 
-	if(eMode == 0 && (iAliveTs == 1 && iAliveCTs == 1))
+	if(!bMode1x1 && (iAliveTs == 1 && iAliveCTs == 1))
 		return 1;
 	
-	if(eMode == 1 && (iAliveTs == 1 || iAliveCTs == 1))
+	if(bMode1x1 && (iAliveTs == 1 || iAliveCTs == 1))
 		return 1;
 
 	return 0;
