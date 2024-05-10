@@ -357,14 +357,9 @@ public MessageHook_ClCorpse() {
 	if(g_eCvars[CORPSE_TIME])
 		set_entvar(iEnt, var_fuser4, get_gametime() + g_eCvars[CORPSE_TIME]);
 
-	new szOriginData[3];
+	fOrigin[2] += 20.0;
 
-	for(new i; i < 3; i++)
-		szOriginData[i] = floatround(fOrigin[i]);
-
-	szOriginData[2] += 20;
-
-	ExecuteForward(g_eForwards[CreatingCorpseEnd], _, iEnt, iPlayer, PrepareArray(szOriginData, sizeof(szOriginData)));
+	ExecuteForward(g_eForwards[CreatingCorpseEnd], _, iEnt, iPlayer, PrepareArray(_:fOrigin, sizeof(fOrigin)));
 
 	return PLUGIN_HANDLED;
 }
