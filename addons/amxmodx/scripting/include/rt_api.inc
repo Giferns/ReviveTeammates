@@ -9,7 +9,7 @@
 #endif
 #define _rt_api_included
 
-public stock const VERSION[] = "2.2.4";
+public stock const VERSION[] = "2.2.5";
 public stock const AUTHORS[] = "DEV-CS.RU Community";
 
 /**
