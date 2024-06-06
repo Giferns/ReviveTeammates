@@ -329,7 +329,10 @@ public MessageHook_ClCorpse() {
 	set_entvar(iEnt, var_team, iPlTeam);
 
 	new Float:fVecOrigin[3];
-	get_entvar(iPlayer, var_origin, fVecOrigin);
+	fVecOrigin[0] = float(get_msg_arg_int(2) / 128);
+	fVecOrigin[1] = float(get_msg_arg_int(3) / 128);
+	fVecOrigin[2] = float(get_msg_arg_int(4) / 128);
+	//get_entvar(iPlayer, var_origin, fVecOrigin);
 	engfunc(EngFunc_SetOrigin, iEnt, fVecOrigin);
 
 	new Float:fVecAngles[3];
