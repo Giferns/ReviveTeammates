@@ -35,6 +35,7 @@ new Float:g_fLastUse[MAX_PLAYERS + 1], g_iTimeUntil[MAX_PLAYERS + 1];
 
 new Float:g_fVecSpawnOrigin[3];
 new HookChain:g_pHook_GetPlayerSpawnSpot;
+new g_szModel[MAX_PLAYERS + 1][64];
 
 public plugin_precache() {
 	CreateCvars();
@@ -54,6 +55,7 @@ public plugin_init() {
 	RegisterHookChain(RG_CBasePlayer_UseEmpty, "CBasePlayer_UseEmpty_Pre", false);
 	DisableHookChain((g_pHook_GetPlayerSpawnSpot = RegisterHookChain(RG_CSGameRules_GetPlayerSpawnSpot, "CSGameRules_GetPlayerSpawnSpot_Pre", false)));
 	RegisterHookChain(RG_CBasePlayer_Spawn, "CBasePlayer_Spawn_Pre", false);
+	RegisterHookChain(RG_CBasePlayer_SetClientUserInfoModel, "CBasePlayer_SetClientUserInfoModel_Pre");
 
 	g_eForwards[ReviveStart] = CreateMultiForward("rt_revive_start", ET_STOP, FP_CELL, FP_CELL, FP_CELL, FP_CELL);
 	g_eForwards[ReviveLoop_Pre] = CreateMultiForward("rt_revive_loop_pre", ET_STOP, FP_CELL, FP_CELL, FP_CELL, FP_FLOAT, FP_CELL);
@@ -122,6 +124,10 @@ public CSGameRules_GetPlayerSpawnSpot_Pre(const iPlayer) {
 
 public CBasePlayer_Spawn_Pre(const iPlayer) {
 	PlayerSpawnOrDisconnect(iPlayer);
+}
+
+public CBasePlayer_SetClientUserInfoModel_Pre(const iPlayer, szInfoBuffer[], szNewModel[]) {
+	copy(g_szModel[iPlayer], charsmax(g_szModel[]), szNewModel);
 }
 
 public Corpse_Use(const iEnt, const iActivator) {
@@ -311,10 +317,12 @@ public MessageHook_ClCorpse() {
 		return PLUGIN_HANDLED;
 	}
 
-	new szModel[32], szModelPath[MAX_RESOURCE_PATH_LENGTH];
-
+	/*new szModel[32], szModelPath[MAX_RESOURCE_PATH_LENGTH];
 	get_user_info(iPlayer, "model", szModel, charsmax(szModel));
-	formatex(szModelPath, charsmax(szModelPath), "models/player/%s/%s.mdl", szModel, szModel);
+	formatex(szModelPath, charsmax(szModelPath), "models/player/%s/%s.mdl", szModel, szModel);*/
+	new szModelPath[MAX_RESOURCE_PATH_LENGTH];
+	formatex(szModelPath, charsmax(szModelPath), "models/player/%s/%s.mdl", g_szModel[iPlayer], g_szModel[iPlayer]);
+
 	set_entvar(iEnt, var_modelindex, engfunc(EngFunc_ModelIndex, szModelPath));
 	set_entvar(iEnt, var_model, szModelPath);
 	set_entvar(iEnt, var_renderfx, kRenderFxDeadPlayer);
