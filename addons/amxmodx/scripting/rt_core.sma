@@ -303,7 +303,7 @@ public MessageHook_ClCorpse() {
 	new iPlayer = get_msg_arg_int(arg_id);
 	new TeamName:iPlTeam = TeamName:get_member(iPlayer, m_iTeam);
 
-	if(iPlTeam == TEAM_SPECTATOR)
+	if(iPlTeam == TEAM_SPECTATOR || g_szModel[iPlayer][0] == EOS)
 		return PLUGIN_HANDLED;
 
 	new iEnt = rg_create_entity("info_target");
