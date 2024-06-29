@@ -30,11 +30,11 @@ enum _:PlayerData {
 	REVIVE_COUNT
 };
 
+const PREVENT_FLAGS = (PLAYER_PREVENT_CLIMB|PLAYER_PREVENT_JUMP);
+
 new g_ePlayerData[MAX_PLAYERS + 1][PlayerData];
 
-new g_iAccessFlags, g_iPreventFlags;
-
-new HookChain:g_hHook_ResetMaxSpeed;
+new g_iAccessFlags;
 
 public plugin_precache() {
 	CreateCvars();
@@ -49,16 +49,13 @@ public plugin_init() {
 	register_dictionary("rt_library.txt");
 
 	RegisterHookChain(RG_CSGameRules_CleanUpMap, "CSGameRules_CleanUpMap_Post", true);
-	DisableHookChain(g_hHook_ResetMaxSpeed = RegisterHookChain(RG_CBasePlayer_ResetMaxSpeed, "CBasePlayer_ResetMaxSpeed_Post", true));
-
-	g_iPreventFlags = (PLAYER_PREVENT_CLIMB|PLAYER_PREVENT_JUMP);
 }
 
 public plugin_cfg() {
 	g_iAccessFlags = read_flags(g_eCvars[ACCESS]);
 
 	if(g_eCvars[NO_MOVE] == 1)
-		EnableHookChain(g_hHook_ResetMaxSpeed);
+		RegisterHookChain(RG_CBasePlayer_PreThink, "CBasePlayer_PreThink_Pre");
 }
 
 public CSGameRules_CleanUpMap_Post() {
@@ -69,9 +66,9 @@ public client_disconnected(iPlayer) {
 	g_ePlayerData[iPlayer][REVIVE_COUNT] = 0;
 }
 
-public CBasePlayer_ResetMaxSpeed_Post(const iActivator) {
-	if(get_entvar(iActivator, var_iuser3) & g_iPreventFlags)
-		set_entvar(iActivator, var_maxspeed, 1.0);
+public CBasePlayer_PreThink_Pre(const iPlayer) {
+	if(is_user_alive(iPlayer) && (get_entvar(iPlayer, var_iuser3) & PREVENT_FLAGS))
+		set_entvar(iPlayer, var_maxspeed, 1.0);
 }
 
 public rt_revive_start(const iEnt, const iPlayer, const iActivator, const Modes:eMode) {
@@ -136,9 +133,9 @@ public rt_revive_start(const iEnt, const iPlayer, const iActivator, const Modes:
 	}
 
 	if(g_eCvars[NO_MOVE] == 1) {
-		set_entvar(iActivator, var_iuser3, get_entvar(iActivator, var_iuser3) | g_iPreventFlags);
+		set_entvar(iActivator, var_iuser3, get_entvar(iActivator, var_iuser3) | PREVENT_FLAGS);
 		set_entvar(iActivator, var_velocity, NULL_VECTOR);
-		rg_reset_maxspeed(iActivator);
+		set_entvar(iActivator, var_maxspeed, 1.0);
 	}
 
 	if(g_eCvars[NO_FIRE])
@@ -192,7 +189,7 @@ public rt_revive_cancelled(const iEnt, const iPlayer, const iActivator, const Mo
 		return;
 
 	if(g_eCvars[NO_MOVE] == 1) {
-		set_entvar(iActivator, var_iuser3, get_entvar(iActivator, var_iuser3) & ~g_iPreventFlags);
+		set_entvar(iActivator, var_iuser3, get_entvar(iActivator, var_iuser3) & ~PREVENT_FLAGS);
 		rg_reset_maxspeed(iActivator);
 	}
 
@@ -215,7 +212,7 @@ public rt_revive_end(const iEnt, const iPlayer, const iActivator, const Modes:eM
 	}
 
 	if(g_eCvars[NO_MOVE] == 1) {
-		set_entvar(iActivator, var_iuser3, get_entvar(iActivator, var_iuser3) & ~g_iPreventFlags);
+		set_entvar(iActivator, var_iuser3, get_entvar(iActivator, var_iuser3) & ~PREVENT_FLAGS);
 		rg_reset_maxspeed(iActivator);
 	}
 
@@ -229,7 +226,7 @@ stock rg_users_count(const bool:bMode1x1 = false) {
 
 	if(!bMode1x1 && (iAliveTs == 1 && iAliveCTs == 1))
 		return 1;
-	
+
 	if(bMode1x1 && (iAliveTs == 1 || iAliveCTs == 1))
 		return 1;
 
@@ -243,7 +240,7 @@ stock Float:rg_get_remaining_time() {
 stock TeamName:rg_get_team_wins_row(const iWins) {
 	if(get_member_game(m_iNumConsecutiveCTLoses) >= iWins)
 		return TEAM_TERRORIST;
-	
+
 	if(get_member_game(m_iNumConsecutiveTerroristLoses) >= iWins)
 		return TEAM_CT;
 
