@@ -16,7 +16,9 @@ enum CVARS {
 	PLANTING_COLORS[MAX_COLORS_LENGTH],
 	PLANTING_COORDS[MAX_COORDS_LENGTH],
 	CORPSE_SPRITE[MAX_RESOURCE_PATH_LENGTH],
-	Float:SPRITE_SCALE
+	Float:SPRITE_SCALE,
+	REVIVE_GLOW[32],
+	PLANTING_GLOW[32]
 };
 
 new g_eCvars[CVARS];
@@ -29,13 +31,20 @@ enum DHudData {
 	Float:COORD_Y
 };
 
+enum GlowColors
+{
+	Float:REVIVE_COLOR,
+	Float:PLANTING_COLOR
+};
+new Float:g_eGlowColors[GlowColors][3];
+
 new g_eDHudData[Modes][DHudData];
 
 new Float:g_fTime;
 
 public plugin_precache() {
 	CreateCvars();
-	
+
 	server_cmd("exec %s", CFG_FILE);
 	server_exec();
 
@@ -82,6 +91,12 @@ public plugin_init() {
 
 public plugin_cfg() {
 	g_fTime = get_pcvar_float(get_cvar_pointer("rt_revive_time"));
+
+	if(g_eCvars[REVIVE_GLOW][0] != EOS)
+		g_eGlowColors[REVIVE_COLOR] = parseHEXColor(g_eCvars[REVIVE_GLOW]);
+
+	if(g_eCvars[PLANTING_GLOW][0] != EOS)
+		g_eGlowColors[PLANTING_COLOR] = parseHEXColor(g_eCvars[PLANTING_GLOW]);
 }
 
 public AddToFullPack_Pre(es, e, ent, host, flags, player, pSet) {
@@ -110,10 +125,16 @@ public rt_revive_start(const iEnt, const iPlayer, const iActivator, const Modes:
 				DisplayDHudMessage(iActivator, eMode, "RT_DHUD_REVIVE", iPlayer);
 				DisplayDHudMessage(iPlayer, eMode, "RT_DHUD_REVIVE2", iActivator);
 			}
+
+			if(g_eCvars[REVIVE_GLOW][0] != EOS)
+				rg_set_rendering(iEnt, kRenderFxGlowShell, g_eGlowColors[REVIVE_COLOR], kRenderNormal, 30.0);
 		}
 		case MODE_PLANT: {
 			if(g_eCvars[NOTIFY_DHUD])
 				DisplayDHudMessage(iActivator, eMode, "RT_DHUD_PLANTING", iPlayer);
+
+			if(g_eCvars[PLANTING_GLOW][0] != EOS)
+				rg_set_rendering(iEnt, kRenderFxGlowShell, g_eGlowColors[PLANTING_COLOR], kRenderNormal, 30.0);
 		}
 	}
 }
@@ -126,12 +147,43 @@ public rt_revive_cancelled(const iEnt, const iPlayer, const iActivator, const Mo
 		if(iPlayer != RT_NULLENT)
 			ClearDHudMessages(iPlayer);
 	}
+
+	switch(eMode)
+	{
+		case MODE_REVIVE:
+		{
+			if(g_eCvars[REVIVE_GLOW][0] != EOS)
+				rg_set_rendering(iEnt);
+		}
+		case MODE_PLANT:
+		{
+			if(g_eCvars[PLANTING_GLOW][0] != EOS)
+				rg_set_rendering(iEnt);
+		}
+	}
 }
 
 public rt_revive_end(const iEnt, const iPlayer, const iActivator, const Modes:eMode) {
 	if(g_eCvars[NOTIFY_DHUD]) {
 		ClearDHudMessages(iActivator);
 		ClearDHudMessages(iPlayer);
+	}
+
+	switch(eMode)
+	{
+		case MODE_REVIVE:
+		{
+			static iMode;
+			iMode = get_entvar(iEnt, var_iuser3);
+
+			if(any:iMode != MODE_PLANT && g_eCvars[REVIVE_GLOW][0] != EOS)
+				rg_set_rendering(iEnt);
+		}
+		case MODE_PLANT:
+		{
+			if(g_eCvars[PLANTING_GLOW][0] != EOS)
+				rg_set_rendering(iEnt);
+		}
 	}
 }
 
@@ -165,6 +217,45 @@ public CorpseSprite_Think(const iEnt) {
 	}
 
 	set_entvar(iEnt, var_nextthink, get_gametime() + 0.1);
+}
+
+stock rg_set_rendering(const id, const fx = kRenderFxNone, const Float:fColor[3] = {0.0, 0.0, 0.0}, const render = kRenderNormal, const Float:fAmount = 0.0)
+{
+	set_entvar(id, var_renderfx, fx);
+	set_entvar(id, var_rendercolor, fColor);
+	set_entvar(id, var_rendermode, render);
+	set_entvar(id, var_renderamt, fAmount);
+}
+
+stock Float:parseHEXColor(const value[])
+{
+	new Float:result[3];
+
+	if(value[0] != '#' && strlen(value) != 7)
+		return result;
+
+	result[0] = parse16bit(value[1], value[2]);
+	result[1] = parse16bit(value[3], value[4]);
+	result[2] = parse16bit(value[5], value[6]);
+
+	return result;
+}
+
+stock Float:parse16bit(ch1, ch2)
+{
+	return float(parseHex(ch1) * 16 + parseHex(ch2));
+}
+
+stock parseHex(const ch)
+{
+	switch(ch)
+	{
+		case '0'..'9': return (ch - '0');
+		case 'a'..'f': return (10 + ch - 'a');
+		case 'A'..'F': return (10 + ch - 'A');
+	}
+
+	return 0;
 }
 
 stock DisplayDHudMessage(const iPlayer, const Modes:eMode, any:...) {
@@ -255,5 +346,21 @@ public CreateCvars() {
 		true,
 		0.5),
 		g_eCvars[SPRITE_SCALE]
+	);
+	bind_pcvar_string(create_cvar(
+		"rt_revive_glow",
+		"#5da130",
+		FCVAR_NONE,
+		"The color of the corpse being resurrected(HEX)"),
+		g_eCvars[REVIVE_GLOW],
+		charsmax(g_eCvars[REVIVE_GLOW])
+	);
+	bind_pcvar_string(create_cvar(
+		"rt_planting_glow",
+		"#9b2d30",
+		FCVAR_NONE,
+		"The color of the corpse being planted(HEX)"),
+		g_eCvars[PLANTING_GLOW],
+		charsmax(g_eCvars[PLANTING_GLOW])
 	);
 }

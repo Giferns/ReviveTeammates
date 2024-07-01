@@ -330,8 +330,8 @@ public MessageHook_ClCorpse() {
 
 	set_entvar(iEnt, var_modelindex, engfunc(EngFunc_ModelIndex, szModelPath));
 	set_entvar(iEnt, var_model, szModelPath);
-	set_entvar(iEnt, var_renderfx, kRenderFxDeadPlayer);
-	set_entvar(iEnt, var_renderamt, float(iPlayer));
+	//set_entvar(iEnt, var_renderfx, kRenderFxDeadPlayer);
+	//set_entvar(iEnt, var_renderamt, float(iPlayer));
 
 	set_entvar(iEnt, var_classname, DEAD_BODY_CLASSNAME);
 	set_entvar(iEnt, var_body, get_msg_arg_int(arg_body));
