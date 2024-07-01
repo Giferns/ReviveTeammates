@@ -7,6 +7,9 @@
 public stock const PLUGIN[] = "Revive Teammates: Core";
 public stock const CFG_FILE[] = "addons/amxmodx/configs/rt_configs/rt_core.cfg";
 
+// Custom Player Models https://dev-cs.ru/resources/928/
+native bool:custom_player_models_get_path(const player, path[] = "", length = 0);
+
 enum CVARS {
 	Float:REVIVE_TIME,
 	Float:ANTIFLOOD_TIME,
@@ -321,7 +324,9 @@ public MessageHook_ClCorpse() {
 	get_user_info(iPlayer, "model", szModel, charsmax(szModel));
 	formatex(szModelPath, charsmax(szModelPath), "models/player/%s/%s.mdl", szModel, szModel);*/
 	new szModelPath[MAX_RESOURCE_PATH_LENGTH];
-	formatex(szModelPath, charsmax(szModelPath), "models/player/%s/%s.mdl", g_szModel[iPlayer], g_szModel[iPlayer]);
+
+	if(!custom_player_models_get_path(iPlayer, szModelPath, charsmax(szModelPath)))
+		formatex(szModelPath, charsmax(szModelPath), "models/player/%s/%s.mdl", g_szModel[iPlayer], g_szModel[iPlayer]);
 
 	set_entvar(iEnt, var_modelindex, engfunc(EngFunc_ModelIndex, szModelPath));
 	set_entvar(iEnt, var_model, szModelPath);
@@ -422,4 +427,12 @@ public CreateCvars() {
 		1.0),
 		g_eCvars[FORCE_FWD_MODE]
 	);
+}
+
+public plugin_natives() {
+	set_native_filter("native_filter");
+}
+
+public native_filter(const szNativeName[], iNativeID, iTrapMode) {
+	return PLUGIN_HANDLED;
 }
