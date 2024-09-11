@@ -211,7 +211,9 @@ public rt_creating_corpse_end(const iEnt, const iPlayer, const Float:fVecOrigin[
 }
 
 public CorpseSprite_Think(const iEnt) {
-	if(is_nullent(get_entvar(iEnt, var_iuser1))) {
+	new iHostEnt = get_entvar(iEnt, var_iuser1);
+
+	if(is_nullent(iHostEnt) || !FClassnameIs(iHostEnt, DEAD_BODY_CLASSNAME)) {
 		RemoveCorpses(get_entvar(iEnt, var_owner), CORPSE_SPRITE_CLASSNAME);
 		return;
 	}

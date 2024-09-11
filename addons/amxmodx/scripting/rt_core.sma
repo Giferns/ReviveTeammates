@@ -24,6 +24,7 @@ new g_eCvars[CVARS];
 
 enum Forwards {
 	ReviveStart,
+	ReviveStart_Post,
 	ReviveLoop_Pre,
 	ReviveLoop_Post,
 	ReviveEnd,
@@ -41,6 +42,7 @@ new Float:g_fLastUse[MAX_PLAYERS + 1], g_iTimeUntil[MAX_PLAYERS + 1];
 new Float:g_fVecSpawnOrigin[3];
 new HookChain:g_pHook_GetPlayerSpawnSpot;
 new g_szModel[MAX_PLAYERS + 1][64];
+new Modes:g_iCurrentMode[MAX_PLAYERS + 1] = { MODE_NONE, ... };
 
 public plugin_precache() {
 	CreateCvars();
@@ -63,6 +65,7 @@ public plugin_init() {
 	RegisterHookChain(RG_CBasePlayer_SetClientUserInfoModel, "CBasePlayer_SetClientUserInfoModel_Pre");
 
 	g_eForwards[ReviveStart] = CreateMultiForward("rt_revive_start", ET_STOP, FP_CELL, FP_CELL, FP_CELL, FP_CELL);
+	g_eForwards[ReviveStart_Post] = CreateMultiForward("rt_revive_start_post", ET_IGNORE, FP_CELL, FP_CELL, FP_CELL, FP_CELL);
 	g_eForwards[ReviveLoop_Pre] = CreateMultiForward("rt_revive_loop_pre", ET_STOP, FP_CELL, FP_CELL, FP_CELL, FP_FLOAT, FP_CELL);
 	g_eForwards[ReviveLoop_Post] = CreateMultiForward("rt_revive_loop_post", ET_IGNORE, FP_CELL, FP_CELL, FP_CELL, FP_FLOAT, FP_CELL);
 	g_eForwards[ReviveEnd] = CreateMultiForward("rt_revive_end", ET_IGNORE, FP_CELL, FP_CELL, FP_CELL, FP_CELL);
@@ -79,7 +82,12 @@ public client_disconnected(iPlayer) {
 	PlayerSpawnOrDisconnect(iPlayer);
 }
 
+public client_remove(iPlayer) {
+	g_iCurrentMode[iPlayer] = MODE_NONE;
+}
+
 public CSGameRules_CleanUpMap_Post() {
+	arrayset(g_iCurrentMode, MODE_NONE, sizeof(g_iCurrentMode));
 	RemoveCorpses(0, DEAD_BODY_CLASSNAME);
 }
 
@@ -193,6 +201,10 @@ public Corpse_Use(const iEnt, const iActivator) {
 	set_entvar(iEnt, var_fuser1, fGameTime + g_eCvars[REVIVE_TIME]);
 	set_entvar(iEnt, var_fuser3, g_eCvars[REVIVE_TIME]);
 	set_entvar(iEnt, var_nextthink, fGameTime + 0.1);
+
+	g_iCurrentMode[iActivator] = eCurrentMode;
+
+	ExecuteForward(g_eForwards[ReviveStart_Post], _, iEnt, iPlayer, iActivator, eCurrentMode);
 }
 
 public Corpse_Think(const iEnt) {
@@ -236,7 +248,12 @@ public Corpse_Think(const iEnt) {
 	g_iTimeUntil[iActivator]++;
 
 	if(g_iTimeUntil[iActivator] == 10 || g_eCvars[FORCE_FWD_MODE]) {
-		fTimeUntil[1] -= 1.0;
+		if(g_eCvars[FORCE_FWD_MODE]) {
+			fTimeUntil[1] -= 0.1;
+		}
+		else {
+			fTimeUntil[1] -= 1.0;
+		}
 
 		if(!is_user_alive(iActivator)) {
 			ResetCorpseThink(g_eForwards[ReviveCancelled], iEnt, iPlayer, iActivator, eCurrentMode);
@@ -275,6 +292,8 @@ public Corpse_Think(const iEnt) {
 			ResetCorpseThink(g_eForwards[ReviveCancelled], iEnt, iPlayer, iActivator, eCurrentMode);
 			return;
 		}
+
+		g_iCurrentMode[iActivator] = MODE_NONE;
 
 		ExecuteForward(g_eForwards[ReviveEnd], _, iEnt, iPlayer, iActivator, eCurrentMode);
 
@@ -387,6 +406,9 @@ stock PlayerSpawnOrDisconnect(const iPlayer) {
 		NotifyClient(iActivator, print_team_red, "RT_DISCONNECTED");
 
 	ResetCorpseThink(g_eForwards[ReviveCancelled], RT_NULLENT, iPlayer, iActivator, MODE_NONE);
+
+	// TODO need to handle corpse user respawn
+	//if(g_iCurrentMode[iPlayer]) { }
 }
 
 public CreateCvars() {
@@ -439,8 +461,69 @@ public CreateCvars() {
 	);
 }
 
+/**
+ * Reset entity think
+ *
+ * @param eForward       Forward type
+ * @param iEnt           Corpse entity index
+ * @param iPlayer        Player id whose corpse
+ * @param iActivator     Player id who ressurect
+ * @param eMode          MODE_REVIVE - stopped the resurrection, MODE_PLANT - stopped planting
+ *
+ * @noreturn
+ */
+ResetCorpseThink(const eForward, const iEnt, iPlayer, iActivator, const Modes:eMode) {
+	if(!is_nullent(iEnt)) {
+		set_entvar(iEnt, var_nextthink, get_gametime() + 1.0);
+		set_entvar(iEnt, var_iuser1, 0);
+	}
+
+	if(iActivator != RT_NULLENT) {
+		g_iCurrentMode[iActivator] = MODE_NONE;
+	}
+
+	iPlayer = is_user_connected(iPlayer) ? iPlayer : RT_NULLENT;
+	iActivator = is_user_connected(iActivator) ? iActivator : RT_NULLENT;
+
+	ExecuteForward(eForward, _, iEnt, iPlayer, iActivator, eMode);
+}
+
 public plugin_natives() {
 	set_native_filter("native_filter");
+	register_native("rt_get_user_mode", "_rt_get_user_mode");
+	register_native("rt_reset_use", "_rt_reset_use");
+}
+
+public Modes:_rt_get_user_mode() {
+	enum { arg_user = 1 };
+
+	return g_iCurrentMode[ get_param(arg_user) ];
+}
+
+public bool:_rt_reset_use() {
+	enum { arg_user = 1 };
+
+	new pPlayer = get_param(arg_user);
+
+	if(g_iCurrentMode[pPlayer] == MODE_NONE) {
+		return false;
+	}
+
+	new iEnt = RT_NULLENT;
+
+	while((iEnt = rg_find_ent_by_class(iEnt, DEAD_BODY_CLASSNAME)) > 0) {
+		if(!is_entity(iEnt)) {
+			continue;
+		}
+
+		if(pPlayer == get_entvar(iEnt, var_iuser1)) {
+			ResetCorpseThink(g_eForwards[ReviveCancelled], iEnt, get_entvar(iEnt, var_owner), pPlayer, get_entvar(iEnt, var_iuser2));
+			return true;
+		}
+	}
+
+	g_iCurrentMode[pPlayer] = MODE_NONE;
+	return false;
 }
 
 public native_filter(const szNativeName[], iNativeID, iTrapMode) {
