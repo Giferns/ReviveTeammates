@@ -54,7 +54,7 @@ enum Modes {
 new const DEAD_BODY_CLASSNAME[] = "rt_corpse_empty";
 
 /**
- * Called after the activator starts resurrection/planting (on press USE - `E`)
+ * [PRE] Called after the activator starts resurrection/planting (on press USE - `E`)
  *
  * @param iEnt           Corpse entity index
  * @param iPlayer        Player id who can be ressurected
@@ -65,6 +65,20 @@ new const DEAD_BODY_CLASSNAME[] = "rt_corpse_empty";
  *                       PLUGIN_HANDLED to stop resurrection/planting
  */
 forward rt_revive_start(const iEnt, const iPlayer, const iActivator, const Modes:eMode);
+
+/**
+ * [POST] Called after the activator starts resurrection/planting (on press USE - `E`)
+ *
+ * @note 			This forward will not be called if something was blocked attempt in rt_revive_start()
+ *
+ * @param iEnt           Corpse entity index
+ * @param iPlayer        Player id who can be ressurected
+ * @param iActivator     Player id who ressurect
+ * @param eMode          MODE_REVIVE - started the resurrection, MODE_PLANT - started planting
+ *
+ * @noreturn
+ */
+forward rt_revive_start_post(const iEnt, const iPlayer, const iActivator, const Modes:eMode);
 
 /**
  * PreThink on resurrection/planting
@@ -144,6 +158,26 @@ forward rt_creating_corpse_start(const iEnt, const iPlayer);
 forward rt_creating_corpse_end(const iEnt, const iPlayer, const Float:fVecOrigin[3]);
 
 /**
+ * Returns current user mode
+ *
+ * @note		In rt_revive_cancelled() and rt_revive_end() always return MODE_NONE
+ *
+ * @param iPlayer        Client index
+ *
+ * @return               see 'Modes' enum
+ */
+native Modes:rt_get_user_mode(iPlayer);
+
+/**
+ * Will interrupt the current process
+ *
+ * @param iPlayer        Client index
+ *
+ * @return               true if success, false otherwise
+ */
+native bool:rt_reset_use(iPlayer);
+
+/**
  * Removal of corpses
  *
  * @param iPlayer        Player id whose corpse or 0 for all corpses
@@ -173,29 +207,6 @@ stock RemoveCorpses(const iPlayer = 0, const szClassName[] = DEAD_BODY_CLASSNAME
 	}
 
 	return iActivator;
-}
-
-/**
- * Reset entity think
- *
- * @param eForward       Forward type
- * @param iEnt           Corpse entity index
- * @param iPlayer        Player id whose corpse
- * @param iActivator     Player id who ressurect
- * @param eMode          MODE_REVIVE - stopped the resurrection, MODE_PLANT - stopped planting
- *
- * @noreturn
- */
-stock ResetCorpseThink(const eForward, const iEnt, iPlayer, iActivator, const Modes:eMode) {
-	if(!is_nullent(iEnt)) {
-		set_entvar(iEnt, var_nextthink, get_gametime() + 1.0);
-		set_entvar(iEnt, var_iuser1, 0);
-	}
-
-	iPlayer = is_user_connected(iPlayer) ? iPlayer : RT_NULLENT;
-	iActivator = is_user_connected(iActivator) ? iActivator : RT_NULLENT;
-
-	ExecuteForward(eForward, _, iEnt, iPlayer, iActivator, eMode);
 }
 
 /**
