@@ -9,6 +9,8 @@ public stock const CFG_FILE[] = "addons/amxmodx/configs/rt_configs/rt_core.cfg";
 
 // Custom Player Models https://dev-cs.ru/resources/928/
 native bool:custom_player_models_get_path(const player, path[] = "", length = 0);
+native bool:custom_player_models_get_body(const player, const any:team, &body);
+native bool:custom_player_models_get_skin(const player, const any:team, &skin);
 
 enum CVARS {
 	Float:REVIVE_TIME,
@@ -325,8 +327,18 @@ public MessageHook_ClCorpse() {
 	formatex(szModelPath, charsmax(szModelPath), "models/player/%s/%s.mdl", szModel, szModel);*/
 	new szModelPath[MAX_RESOURCE_PATH_LENGTH];
 
-	if(!custom_player_models_get_path(iPlayer, szModelPath, charsmax(szModelPath)))
+	if(!custom_player_models_get_path(iPlayer, szModelPath, charsmax(szModelPath))) {
 		formatex(szModelPath, charsmax(szModelPath), "models/player/%s/%s.mdl", g_szModel[iPlayer], g_szModel[iPlayer]);
+		set_entvar(iEnt, var_body, get_msg_arg_int(arg_body));
+		set_entvar(iEnt, var_skin, get_entvar(iPlayer, var_skin));
+	}
+	else {
+		new iBody, iSkin;
+		custom_player_models_get_body(iPlayer, iPlTeam, iBody);
+		custom_player_models_get_skin(iPlayer, iPlTeam, iSkin);
+		set_entvar(iEnt, var_body, iBody);
+		set_entvar(iEnt, var_skin, iSkin);
+	}
 
 	set_entvar(iEnt, var_modelindex, engfunc(EngFunc_ModelIndex, szModelPath));
 	set_entvar(iEnt, var_model, szModelPath);
@@ -334,10 +346,8 @@ public MessageHook_ClCorpse() {
 	//set_entvar(iEnt, var_renderamt, float(iPlayer));
 
 	set_entvar(iEnt, var_classname, DEAD_BODY_CLASSNAME);
-	set_entvar(iEnt, var_body, get_msg_arg_int(arg_body));
 	set_entvar(iEnt, var_sequence, get_entvar(iPlayer, var_sequence));
 	set_entvar(iEnt, var_frame, 255.0);
-	set_entvar(iEnt, var_skin, get_entvar(iPlayer, var_skin));
 	set_entvar(iEnt, var_owner, iPlayer);
 	set_entvar(iEnt, var_team, iPlTeam);
 
