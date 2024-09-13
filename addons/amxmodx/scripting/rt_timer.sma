@@ -10,7 +10,8 @@ enum CVARS {
 	REVIVE_COLORS[MAX_COLORS_LENGTH],
 	REVIVE_COORDS[MAX_COORDS_LENGTH],
 	PLANTING_COLORS[MAX_COLORS_LENGTH],
-	PLANTING_COORDS[MAX_COORDS_LENGTH]
+	PLANTING_COORDS[MAX_COORDS_LENGTH],
+	FORCE_FWD_MODE
 };
 
 new g_eCvars[CVARS];
@@ -40,12 +41,12 @@ new const TIMER_REPLACE_SYMB[]	= "| -";
 new const TIMER_REPLACE_WITH[]	= "| |";
 
 new g_szTimer[MAX_PLAYERS + 1][64];
-
 new g_iHudSyncObj;
+new g_iTicks[MAX_PLAYERS + 1];
 
 public plugin_precache() {
 	CreateCvars();
-	
+
 	server_cmd("exec %s", CFG_FILE);
 	server_exec();
 
@@ -82,7 +83,7 @@ public plugin_init() {
 	register_plugin(PLUGIN, VERSION, AUTHORS);
 
 	register_dictionary("rt_library.txt");
-	
+
 	if(!g_eCvars[TIMER_TYPE])
 		g_iHudSyncObj = CreateHudSyncObj();
 
@@ -92,6 +93,8 @@ public plugin_init() {
 }
 
 public rt_revive_start(const iEnt, const iPlayer, const iActivator, const Modes:eMode) {
+	g_iTicks[iActivator] = 0;
+
 	switch(g_eCvars[TIMER_TYPE]) {
 		case 0: {
 			formatex(g_szTimer[iPlayer], charsmax(g_szTimer[]), TIMER_BEGIN);
@@ -113,10 +116,14 @@ public rt_revive_start(const iEnt, const iPlayer, const iActivator, const Modes:
 }
 
 public rt_revive_loop_post(const iEnt, const iPlayer, const iActivator, const Float:fTimer, Modes:eMode) {
-	if(!g_eCvars[TIMER_TYPE]) {
-		replace(g_szTimer[iPlayer], charsmax(g_szTimer[]), TIMER_REPLACE_SYMB, TIMER_REPLACE_WITH);
+	if(!g_eCvars[FORCE_FWD_MODE] || ++g_iTicks[iActivator] == 10) {
+		g_iTicks[iActivator] = 0;
 
-		DisplayHudMessage(iPlayer, iActivator, eMode);
+		if(!g_eCvars[TIMER_TYPE]) {
+			replace(g_szTimer[iPlayer], charsmax(g_szTimer[]), TIMER_REPLACE_SYMB, TIMER_REPLACE_WITH);
+
+			DisplayHudMessage(iPlayer, iActivator, eMode);
+		}
 	}
 }
 
@@ -129,7 +136,7 @@ public rt_revive_cancelled(const iEnt, const iPlayer, const iActivator, const Mo
 		case 1: {
 			if(iActivator != RT_NULLENT)
 				rg_send_bartime(iActivator, 0);
-			
+
 			if(eMode == MODE_REVIVE && iPlayer != RT_NULLENT)
 				rg_send_bartime(iPlayer, 0);
 		}
@@ -186,4 +193,9 @@ public CreateCvars() {
 		g_eCvars[PLANTING_COORDS],
 		charsmax(g_eCvars[PLANTING_COORDS])
 	);
+
+	new pCvar = get_cvar_pointer("rt_force_fwd_mode");
+
+	if(pCvar)
+		bind_pcvar_num(pCvar, g_eCvars[FORCE_FWD_MODE]);
 }

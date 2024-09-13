@@ -13,7 +13,8 @@ public stock const INI_FILE[] = "addons/amxmodx/configs/rt_configs/rt_sounds.ini
 
 enum CVARS {
 	Float:SOUND_RADIUS,
-	NEARBY_PLAYERS
+	NEARBY_PLAYERS,
+	FORCE_FWD_MODE
 };
 
 new g_eCvars[CVARS];
@@ -30,15 +31,16 @@ enum sections_struct {
 new sections_struct:g_eCurrentSection;
 new g_iSounds[sections_struct];
 new g_szSounds[sections_struct][MAX_SOUNDS_PER_SECTION][MAX_SOUND_LENGTH];
+new g_iTicks[MAX_PLAYERS + 1];
 
 public plugin_precache() {
 	register_plugin(PLUGIN, VERSION, AUTHORS);
-	
+
 	if(!file_exists(INI_FILE)) {
 		set_fail_state("[RT Sounds] File ^"%s^" not found", INI_FILE);
 		return;
 	}
-	
+
 	new INIParser:iParser = INI_CreateParser();
 	INI_SetReaders(iParser, "ReadKeyValue", "ReadNewSection");
 	INI_ParseFile(iParser, INI_FILE);
@@ -51,6 +53,8 @@ public plugin_precache() {
 }
 
 public rt_revive_start(const iEnt, const iPlayer, const iActivator, const Modes:eMode) {
+	g_iTicks[iActivator] = 0;
+
 	switch(eMode) {
 		case MODE_REVIVE: { PlaybackSound(iEnt, iPlayer, iActivator, SECTION_REVIVE_START); }
 		case MODE_PLANT: { PlaybackSound(iEnt, iPlayer, iActivator, SECTION_PLANT_START); }
@@ -58,9 +62,13 @@ public rt_revive_start(const iEnt, const iPlayer, const iActivator, const Modes:
 }
 
 public rt_revive_loop_post(const iEnt, const iPlayer, const iActivator, const Float:fTimer, Modes:eMode) {
-	switch(eMode) {
-		case MODE_REVIVE: { PlaybackSound(iEnt, iPlayer, iActivator, SECTION_REVIVE_LOOP); }
-		case MODE_PLANT: { PlaybackSound(iEnt, iPlayer, iActivator, SECTION_PLANT_LOOP); }
+	if(!g_eCvars[FORCE_FWD_MODE] || ++g_iTicks[iActivator] == 10) {
+		g_iTicks[iActivator] = 0;
+
+		switch(eMode) {
+			case MODE_REVIVE: { PlaybackSound(iEnt, iPlayer, iActivator, SECTION_REVIVE_LOOP); }
+			case MODE_PLANT: { PlaybackSound(iEnt, iPlayer, iActivator, SECTION_PLANT_LOOP); }
+		}
 	}
 }
 
@@ -68,7 +76,7 @@ public rt_revive_end(const iEnt, const iPlayer, const iActivator, const Modes:eM
 	switch(eMode) {
 		case MODE_REVIVE: {
 			new Modes:iMode = Modes:get_entvar(iEnt, var_iuser3);
-			
+
 			if(iMode != MODE_PLANT)
 				PlaybackSound(iEnt, iPlayer, iActivator, SECTION_REVIVE_END);
 		}
@@ -101,21 +109,21 @@ public bool:ReadNewSection(INIParser:iParser, const szSection[], bool:bInvalidTo
 		g_eCurrentSection = SECTION_PLANT_END;
 		return true;
 	}
-	
+
 	return false;
 }
 
 public bool:ReadKeyValue(INIParser:iParser, const szKey[], const szValue[]) {
 	if(szKey[0] == EOS)
 		return false;
-	
+
 	new szSound[MAX_SOUND_LENGTH];
 	copy(szSound, charsmax(szSound), szKey);
 	trim(szSound);
 	copy(g_szSounds[g_eCurrentSection][g_iSounds[g_eCurrentSection]++], charsmax(g_szSounds[][]), szSound);
-	
+
 	precache_sound(szSound);
-	
+
 	return true;
 }
 
@@ -135,7 +143,7 @@ stock PlaybackSoundNearbyPlayers(const iPlayer, const szSound[]) {
 
 	new Float:fVecOrigin[3];
 	get_entvar(iPlayer, var_vuser4, fVecOrigin);
-	
+
 	while((iEnt = engfunc(EngFunc_FindEntityInSphere, iEnt, fVecOrigin, g_eCvars[SOUND_RADIUS])) > 0)
 		if(ExecuteHam(Ham_IsPlayer, iEnt))
 			rg_send_audio(iEnt, szSound);
@@ -162,4 +170,9 @@ public CreateCvars() {
 		2.0),
 		g_eCvars[NEARBY_PLAYERS]
 	);
+
+	new pCvar = get_cvar_pointer("rt_force_fwd_mode");
+
+	if(pCvar)
+		bind_pcvar_num(pCvar, g_eCvars[FORCE_FWD_MODE]);
 }
