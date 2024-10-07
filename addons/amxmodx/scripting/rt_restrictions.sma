@@ -34,8 +34,6 @@ const PREVENT_FLAGS = (PLAYER_PREVENT_CLIMB|PLAYER_PREVENT_JUMP);
 
 new g_ePlayerData[MAX_PLAYERS + 1][PlayerData];
 
-new g_iAccessFlags;
-
 public plugin_precache() {
 	CreateCvars();
 
@@ -52,8 +50,6 @@ public plugin_init() {
 }
 
 public plugin_cfg() {
-	g_iAccessFlags = read_flags(g_eCvars[ACCESS]);
-
 	if(g_eCvars[NO_MOVE] == 1)
 		RegisterHookChain(RG_CBasePlayer_PreThink, "CBasePlayer_PreThink_Pre");
 }
@@ -72,7 +68,7 @@ public CBasePlayer_PreThink_Pre(const iPlayer) {
 }
 
 public rt_revive_start(const iEnt, const iPlayer, const iActivator, const Modes:eMode) {
-	if(~get_user_flags(iActivator) & g_iAccessFlags) {
+	if( g_eCvars[ACCESS][0] && !(get_user_flags(iActivator) & read_flags(g_eCvars[ACCESS])) ) {
 		NotifyClient(iActivator, print_team_red, "RT_NO_ACCESS");
 		return PLUGIN_HANDLED;
 	}
