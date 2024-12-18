@@ -17,7 +17,8 @@ enum CVARS {
 	Float:ANTIFLOOD_TIME,
 	Float:CORPSE_TIME,
 	Float:SEARCH_RADIUS,
-	FORCE_FWD_MODE
+	FORCE_FWD_MODE,
+	CORPSE_MODEL_MODE
 };
 
 new g_eCvars[CVARS];
@@ -347,7 +348,15 @@ public MessageHook_ClCorpse() {
 	new szModelPath[MAX_RESOURCE_PATH_LENGTH];
 
 	if(!custom_player_models_get_path(iPlayer, szModelPath, charsmax(szModelPath))) {
-		formatex(szModelPath, charsmax(szModelPath), "models/player/%s/%s.mdl", g_szModel[iPlayer], g_szModel[iPlayer]);
+		if(!g_eCvars[CORPSE_MODEL_MODE]) {
+			formatex(szModelPath, charsmax(szModelPath), "models/player/%s/%s.mdl", g_szModel[iPlayer], g_szModel[iPlayer]);
+		}
+		else {
+			new szModel[64];
+			rh_update_user_info(iPlayer);
+			get_user_info(iPlayer, "model", szModel, charsmax(szModel));
+			formatex(szModelPath, charsmax(szModelPath), "models/player/%s/%s.mdl", szModel, szModel);
+		}
 		set_entvar(iEnt, var_body, get_msg_arg_int(arg_body));
 		set_entvar(iEnt, var_skin, get_entvar(iPlayer, var_skin));
 	}
@@ -458,6 +467,17 @@ public CreateCvars() {
 		true,
 		1.0),
 		g_eCvars[FORCE_FWD_MODE]
+	);
+	bind_pcvar_num(create_cvar(
+		"rt_corpse_model_mode",
+		"0",
+		FCVAR_NONE,
+		"Try set this to 1 if corpses lose their custom model.",
+		true,
+		0.0,
+		true,
+		1.0),
+		g_eCvars[CORPSE_MODEL_MODE]
 	);
 }
 
