@@ -347,7 +347,14 @@ public MessageHook_ClCorpse() {
 	formatex(szModelPath, charsmax(szModelPath), "models/player/%s/%s.mdl", szModel, szModel);*/
 	new szModelPath[MAX_RESOURCE_PATH_LENGTH];
 
+	new Float:fVecOrigin[3];
+	fVecOrigin[0] = float(get_msg_arg_int(2) / 128);
+	fVecOrigin[1] = float(get_msg_arg_int(3) / 128);
+	fVecOrigin[2] = float(get_msg_arg_int(4) / 128);
+
 	if(!custom_player_models_get_path(iPlayer, szModelPath, charsmax(szModelPath))) {
+		new iBody = get_msg_arg_int(arg_body);
+		
 		if(!g_eCvars[CORPSE_MODEL_MODE]) {
 			formatex(szModelPath, charsmax(szModelPath), "models/player/%s/%s.mdl", g_szModel[iPlayer], g_szModel[iPlayer]);
 		}
@@ -357,7 +364,7 @@ public MessageHook_ClCorpse() {
 			get_user_info(iPlayer, "model", szModel, charsmax(szModel));
 			formatex(szModelPath, charsmax(szModelPath), "models/player/%s/%s.mdl", szModel, szModel);
 		}
-		set_entvar(iEnt, var_body, get_msg_arg_int(arg_body));
+		set_entvar(iEnt, var_body, iBody);
 		set_entvar(iEnt, var_skin, get_entvar(iPlayer, var_skin));
 	}
 	else {
@@ -379,10 +386,6 @@ public MessageHook_ClCorpse() {
 	set_entvar(iEnt, var_owner, iPlayer);
 	set_entvar(iEnt, var_team, iPlTeam);
 
-	new Float:fVecOrigin[3];
-	fVecOrigin[0] = float(get_msg_arg_int(2) / 128);
-	fVecOrigin[1] = float(get_msg_arg_int(3) / 128);
-	fVecOrigin[2] = float(get_msg_arg_int(4) / 128);
 	//get_entvar(iPlayer, var_origin, fVecOrigin);
 	engfunc(EngFunc_SetOrigin, iEnt, fVecOrigin);
 
